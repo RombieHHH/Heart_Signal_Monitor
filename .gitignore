@@ -4,3 +4,4 @@ platformio.ini
 CMakePresets.json
 CMakeLists.txt
 \cmake
+\build

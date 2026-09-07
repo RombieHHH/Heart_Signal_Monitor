@@ -1,0 +1,248 @@
+[
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_adc.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_adc.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_adc.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_adc.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_adc_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_adc_ex.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_adc_ex.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_adc_ex.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_cortex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_cortex.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_cortex.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_cortex.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_dma.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_dma.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_dma.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_dma.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_exti.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_exti.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_exti.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_exti.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_flash.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_flash.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_flash.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_flash.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_flash_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_flash_ex.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_flash_ex.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_flash_ex.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_gpio.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_gpio.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_gpio.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_gpio.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_gpio_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_gpio_ex.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_gpio_ex.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_gpio_ex.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_pwr.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_pwr.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_pwr.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_pwr.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_rcc.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_rcc.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_rcc.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_rcc.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_rcc_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_rcc_ex.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_rcc_ex.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_rcc_ex.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_spi.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_spi.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_spi.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_spi.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_tim.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_tim.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_tim.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_tim.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_tim_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_tim_ex.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_tim_ex.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_tim_ex.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_uart.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_uart.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_uart.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Drivers\\STM32F1xx_HAL_Driver\\Src\\stm32f1xx_hal_uart.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2\\cmsis_os2.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Middlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2\\cmsis_os2.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Middlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2\\cmsis_os2.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2\\cmsis_os2.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\croutine.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Middlewares\\Third_Party\\FreeRTOS\\Source\\croutine.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Middlewares\\Third_Party\\FreeRTOS\\Source\\croutine.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\croutine.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\event_groups.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Middlewares\\Third_Party\\FreeRTOS\\Source\\event_groups.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Middlewares\\Third_Party\\FreeRTOS\\Source\\event_groups.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\event_groups.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\list.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Middlewares\\Third_Party\\FreeRTOS\\Source\\list.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Middlewares\\Third_Party\\FreeRTOS\\Source\\list.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\list.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3\\port.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3\\port.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3\\port.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3\\port.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang\\heap_4.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang\\heap_4.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang\\heap_4.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang\\heap_4.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\queue.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Middlewares\\Third_Party\\FreeRTOS\\Source\\queue.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Middlewares\\Third_Party\\FreeRTOS\\Source\\queue.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\queue.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\stream_buffer.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Middlewares\\Third_Party\\FreeRTOS\\Source\\stream_buffer.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Middlewares\\Third_Party\\FreeRTOS\\Source\\stream_buffer.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\stream_buffer.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\tasks.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Middlewares\\Third_Party\\FreeRTOS\\Source\\tasks.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Middlewares\\Third_Party\\FreeRTOS\\Source\\tasks.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\tasks.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\timers.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Middlewares\\Third_Party\\FreeRTOS\\Source\\timers.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Middlewares\\Third_Party\\FreeRTOS\\Source\\timers.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Middlewares\\Third_Party\\FreeRTOS\\Source\\timers.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\adc.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\adc.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\adc.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\adc.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\freertos.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\freertos.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\freertos.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\freertos.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\gpio.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\gpio.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\gpio.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\gpio.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\main.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\main.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\main.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\main.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\spi.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\spi.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\spi.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\spi.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\stm32f1xx_hal_msp.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\stm32f1xx_hal_msp.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\stm32f1xx_hal_msp.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\stm32f1xx_hal_msp.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\stm32f1xx_hal_timebase_tim.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\stm32f1xx_hal_timebase_tim.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\stm32f1xx_hal_timebase_tim.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\stm32f1xx_hal_timebase_tim.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\stm32f1xx_it.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\stm32f1xx_it.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\stm32f1xx_it.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\stm32f1xx_it.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\syscalls.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\syscalls.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\syscalls.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\syscalls.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\sysmem.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\sysmem.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\sysmem.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\sysmem.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\system_stm32f1xx.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\system_stm32f1xx.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\system_stm32f1xx.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\system_stm32f1xx.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\tim.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\tim.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\tim.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\tim.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\genericSTM32F1RB\\src\\Src\\usart.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m3 -DF_CPU=72000000L -DPLATFORMIO=60200 -DSTM32F103xB -DSTM32F1 -I. -IInc -IDrivers\\STM32F1xx_HAL_Driver\\Inc -IDrivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy -IDrivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include -IDrivers\\CMSIS\\Include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\include -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\GCC\\ARM_CM3 -IMiddlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang Src\\usart.c",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "Src\\usart.c",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\Src\\usart.o"
+    },
+    {
+        "command": "C:\\Users\\MagmaDimsum\\.platformio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-as.exe -mthumb -mcpu=cortex-m3 -o .pio\\build\\genericSTM32F1RB\\src\\startup_stm32f103xb.o startup_stm32f103xb.s",
+        "directory": "D:\\Code\\Heart_Signal_Monitor",
+        "file": "startup_stm32f103xb.s",
+        "output": ".pio\\build\\genericSTM32F1RB\\src\\startup_stm32f103xb.o"
+    }
+]

@@ -1,0 +1,6 @@
+\.pio
+STM32F103xx_FLASH.ld
+platformio.ini
+CMakePresets.json
+CMakeLists.txt
+\cmake

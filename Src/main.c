@@ -26,6 +26,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "lcd.h"
 
 /* USER CODE END Includes */
 
@@ -97,12 +98,16 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  LCD_Init();
+  LCD_ShowOriginalContent();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    LCD_SetBacklight(1U);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

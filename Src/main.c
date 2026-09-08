@@ -26,6 +26,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "ad8232.h"
 #include "lcd.h"
 
 /* USER CODE END Includes */
@@ -70,6 +71,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+  uint16_t sample = 0U;
+  uint32_t lcd_update_tick;
 
   /* USER CODE END 1 */
 
@@ -99,7 +102,16 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   LCD_Init();
-  LCD_ShowOriginalContent();
+  LCD_Fill(LCD_COLOR_BLACK);
+  LCD_DrawString(84U, 12U, "AD8232", 2U, LCD_COLOR_CYAN);
+  LCD_DrawString(18U, 64U, "RAW", 2U, LCD_COLOR_WHITE);
+  LCD_DrawString(18U, 160U, "LEADS", 2U, LCD_COLOR_WHITE);
+
+  if (AD8232_Init() != HAL_OK)
+  {
+    Error_Handler();
+  }
+  lcd_update_tick = HAL_GetTick();
 
   /* USER CODE END 2 */
 
@@ -107,7 +119,29 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    LCD_SetBacklight(1U);
+    if (AD8232_ReadSample(&sample) != 0U)
+    {
+      (void)AD8232_TransmitVofa(&huart2, sample);
+    }
+
+    if ((HAL_GetTick() - lcd_update_tick) >= 100U)
+    {
+      lcd_update_tick = HAL_GetTick();
+      sample = AD8232_GetLatestSample();
+
+      LCD_FillRect(18U, 94U, 120U, 32U, LCD_COLOR_BLACK);
+      LCD_DrawUInt16(18U, 96U, sample, 4U, 4U, LCD_COLOR_GREEN);
+
+      LCD_FillRect(114U, 158U, 108U, 20U, LCD_COLOR_BLACK);
+      if (AD8232_AreLeadsOff() != 0U)
+      {
+        LCD_DrawString(120U, 160U, "OFF", 2U, LCD_COLOR_RED);
+      }
+      else
+      {
+        LCD_DrawString(120U, 160U, "OK", 2U, LCD_COLOR_GREEN);
+      }
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

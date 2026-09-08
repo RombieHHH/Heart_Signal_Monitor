@@ -23,6 +23,8 @@ void LCD_FillRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height,
 void LCD_DrawPixel(uint16_t x, uint16_t y, uint16_t color);
 void LCD_DrawString(uint16_t x, uint16_t y, const char *text, uint8_t scale,
                     uint16_t color);
+void LCD_DrawUInt16(uint16_t x, uint16_t y, uint16_t value,
+                    uint8_t minimum_digits, uint8_t scale, uint16_t color);
 void LCD_ShowOriginalContent(void);
 
 #endif

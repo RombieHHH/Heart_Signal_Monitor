@@ -222,10 +222,17 @@ static const uint8_t *LCD_GetGlyph(char character)
     static const uint8_t glyph_r[5] = {0x7FU, 0x09U, 0x19U, 0x29U, 0x46U};
     static const uint8_t glyph_s[5] = {0x46U, 0x49U, 0x49U, 0x49U, 0x31U};
     static const uint8_t glyph_t[5] = {0x01U, 0x01U, 0x7FU, 0x01U, 0x01U};
+    static const uint8_t glyph_w[5] = {0x3FU, 0x40U, 0x38U, 0x40U, 0x3FU};
+    static const uint8_t glyph_0[5] = {0x3EU, 0x51U, 0x49U, 0x45U, 0x3EU};
     static const uint8_t glyph_1[5] = {0x00U, 0x42U, 0x7FU, 0x40U, 0x00U};
     static const uint8_t glyph_2[5] = {0x62U, 0x51U, 0x49U, 0x49U, 0x46U};
     static const uint8_t glyph_3[5] = {0x22U, 0x41U, 0x49U, 0x49U, 0x36U};
     static const uint8_t glyph_4[5] = {0x18U, 0x14U, 0x12U, 0x7FU, 0x10U};
+    static const uint8_t glyph_5[5] = {0x2FU, 0x49U, 0x49U, 0x49U, 0x31U};
+    static const uint8_t glyph_6[5] = {0x3EU, 0x49U, 0x49U, 0x49U, 0x30U};
+    static const uint8_t glyph_7[5] = {0x01U, 0x71U, 0x09U, 0x05U, 0x03U};
+    static const uint8_t glyph_8[5] = {0x36U, 0x49U, 0x49U, 0x49U, 0x36U};
+    static const uint8_t glyph_9[5] = {0x06U, 0x49U, 0x49U, 0x29U, 0x1EU};
 
     switch (character)
     {
@@ -245,10 +252,17 @@ static const uint8_t *LCD_GetGlyph(char character)
         case 'R': return glyph_r;
         case 'S': return glyph_s;
         case 'T': return glyph_t;
+        case 'W': return glyph_w;
+        case '0': return glyph_0;
         case '1': return glyph_1;
         case '2': return glyph_2;
         case '3': return glyph_3;
         case '4': return glyph_4;
+        case '5': return glyph_5;
+        case '6': return glyph_6;
+        case '7': return glyph_7;
+        case '8': return glyph_8;
+        case '9': return glyph_9;
         default: return blank;
     }
 }
@@ -283,6 +297,43 @@ void LCD_DrawString(uint16_t x, uint16_t y, const char *text, uint8_t scale,
         x = (uint16_t)(x + 6U * scale);
         ++text;
     }
+}
+
+void LCD_DrawUInt16(uint16_t x, uint16_t y, uint16_t value,
+                    uint8_t minimum_digits, uint8_t scale, uint16_t color)
+{
+    char text[6];
+    uint8_t length = 0U;
+    uint8_t index;
+    char digit;
+
+    if (minimum_digits > 5U)
+    {
+        minimum_digits = 5U;
+    }
+
+    do
+    {
+        text[length] = (char)('0' + (value % 10U));
+        value = (uint16_t)(value / 10U);
+        ++length;
+    } while ((value != 0U) && (length < 5U));
+
+    while (length < minimum_digits)
+    {
+        text[length] = '0';
+        ++length;
+    }
+    text[length] = '\0';
+
+    for (index = 0U; index < (length / 2U); ++index)
+    {
+        digit = text[index];
+        text[index] = text[length - index - 1U];
+        text[length - index - 1U] = digit;
+    }
+
+    LCD_DrawString(x, y, text, scale, color);
 }
 
 void LCD_ShowOriginalContent(void)

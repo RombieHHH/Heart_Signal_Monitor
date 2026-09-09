@@ -21,18 +21,21 @@ ecg_host/
 ## 安装
 
 ```bash
-cd ecg_host
+cd web
 python -m pip install -r requirements.txt
 ```
 
 ## 运行
 
 ```bash
-# 常规启动：auto 自动识别 HSM 蓝牙虚拟串口（模块→PC 方向，默认 921600）
+# 常规启动：通过蓝牙串口 COM6 接收 MCU USART3 数据，默认 115200、8N1
 python main.py
 
 # 手动指定串口 / 波特率
-python main.py --port COM29 --baud 921600
+python main.py --port COM6 --baud 115200
+
+# 如需恢复自动识别 HSM 蓝牙串口
+python main.py --port auto
 
 # 关闭记录、启用调试日志
 python main.py --no-record -v --host 0.0.0.0
@@ -71,22 +74,24 @@ python main.py --port COM29
 
 ### 下行口（下位机 → 上位机）二进制帧
 
-小端序，单帧周期 100 ms，默认 50 个样本，固定开销 26 字节头 + 载荷 500 字节 + CRC2 字节 = 528 字节：
+当前蓝牙协议为 version 2/type 2：MCU 以 500 Hz 发送 8 位量化 ADC 电平。
+每 100 ms 发送 50 个量化电平。固定开销 26 字节头 + 50 字节载荷 + CRC2 字节 = 78 字节，平均约 780 B/s。
+载荷每字节为 `raw_adc >> 4`；后端恢复 ADC 电平并重新计算滤波、P/Q/R/S/T、心率、HRV、质量和报警。
 
 | 字段 | 类型/字节 | 含义 |
 | --- | --- | --- |
 | sync | 2 | 同步字 `0xA5 0x5A` |
-| version / type | u8 / u8 | 版本 1；类型 1=波形帧 |
+| version / type | u8 / u8 | 版本 2；类型 2=紧凑电平帧 |
 | payload_len / flags | u16 / u16 | 载荷长度；bit0=采集缺口 bit1=发送丢帧 |
 | frame_seq / sample0 | u32 / u32 | 帧号；本帧首样本采样序号 |
 | sample_rate / count | u16 / u16 | 500 Hz；样本数 50 |
-| hr / sd_rr / rmssd_rr | u16×3 | 0.1 BPM / 0.1 ms；`0xFFFF` 无效 |
-| sample records | count×10 | 见下 |
+| hr / sd_rr / rmssd_rr | u16×3 | 固定 `0xFFFF`，由上位机计算 |
+| level samples | count×1 | 8 位 ADC 电平 |
 | CRC16 | u16 | CCITT-FALSE（poly 0x1021，init 0xFFFF，覆盖 version~载荷） |
 
-样本记录（10 B）：`raw(u16)`，`filtered(i16)`，`r_seq(u32，无事件=0xFFFFFFFF)`，`quality(u8)`，`alarm(u8)`。
+后端恢复 ADC 电平后产生 `filtered`、`r_seq`、`quality` 和 `alarm`。
 
-- `quality` 位：bit0 导联脱落，bit1 削顶，bit2 伪迹/检测不稳，bit3 学习中
+- `quality` 位：bit1 削顶，bit2 平线/无效，bit3 学习中
 - `alarm`：0 积累，1 信号无效，2 正常，3 疑似节律异常
 - CRC 错误整帧丢弃；凭 sample0/frame_seq 判别缺口（详见 `recorder`）。
 
@@ -115,7 +120,8 @@ python main.py --port COM29
     "start_index": 121457,
     "filtered": [ ... ],          // 整形数组
     "raw": [ ... ],
-    "r_marks": [0, 1, 0, ...]     // R 事件标记(0/1)，与数组对齐
+    "r_marks": [0, 1, 0, ...],    // R 事件标记(0/1)，兼容字段
+    "point_marks": [0, 2, 0, ...] // 0无；1=R 2=P 3=Q 4=S 5=T
   }
 }
 ```

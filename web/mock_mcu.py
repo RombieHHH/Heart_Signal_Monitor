@@ -17,7 +17,7 @@ mock_mcu.py
 
 默认：
     COM29
-    921600 baud
+    115200 baud
     500 Hz
     每帧 50 点
     100 ms / frame
@@ -28,7 +28,7 @@ mock_mcu.py
     这里不再使用原来的“10 字节 / 1.9 ms”发送方式。
 
     每帧 528 字节在 UART 上连续发送：
-        528 * 10 / 921600 ≈ 5.73 ms
+        528 * 10 / 115200 ≈ 45.83 ms
 
     之后等待剩余时间，约 94.27 ms，
     再发送下一帧。
@@ -45,7 +45,7 @@ mock_mcu.py
 
     python mock_mcu.py --port COM29 --hr 72 --rr-jitter 8
 
-    python mock_mcu.py --port COM29 --baud 921600 --verbose
+    python mock_mcu.py --port COM29 --baud 115200 --verbose
 
 按 Ctrl+C 停止。
 """
@@ -614,8 +614,8 @@ def parse_args(argv=None):
     parser.add_argument(
         "--baud",
         type=int,
-        default=921600,
-        help="波特率，默认 921600",
+        default=115200,
+        help="波特率，默认 115200",
     )
 
     parser.add_argument(

@@ -27,7 +27,7 @@ from .recorder import CsvRecorder
 
 log = logging.getLogger("ecg.reader")
 
-INACTIVE_TIMEOUT_S = 1.0      # 连续 1 s 未收到有效帧 -> 视为连接中断
+INACTIVE_TIMEOUT_S = 1.0      # 100 ms 一帧；连续 1 s 无有效帧视为断开
 RECONNECT_DELAY_S = 2.0
 
 # 目标蓝牙模块：主机配对后虚拟为 BTHENUM 串口
@@ -109,7 +109,7 @@ class SerialReader(threading.Thread):
     """后台读取蓝牙串口的线程，daemon 运行。"""
 
     def __init__(self, store: DataStore, recorder: Optional[CsvRecorder] = None,
-                 port: Optional[str] = "auto", baudrate: int = 921600,
+                 port: Optional[str] = "auto", baudrate: int = 115200,
                  name: str = "SerialReader"):
         super().__init__(name=name, daemon=True)
         self.store = store
@@ -151,30 +151,37 @@ class SerialReader(threading.Thread):
         if conn is None:
             return
         self._port_handle = conn
+        self.parser = FrameParser()
         self.store.update_status(
-            connected=True,
+            connected=False,
+            serial_open=True,
             port=conn.port or self.port,
             baudrate=self.baudrate,
             last_frame_time=None,  # 重新连接后重置，避免误判
+            bytes_received=0,
         )
+        self.store.merge_parser_stats(self.parser.stats)
+        bytes_received = 0
         log.info("connected to serial %s", conn.port)
 
         try:
             while not self._stop_evt.is_set():
                 # 读取时阻塞等待，设置超时以响应停止事件
-                chunk = conn.read(4096)
+                chunk = conn.read(min(4096, max(1, conn.in_waiting)))
                 if not chunk:
                     # 无数据：若连续超时未收到有效帧，标记断连
                     if self._inactive_timed_out():
                         self.store.update_status(connected=False)
                     continue
+                bytes_received += len(chunk)
                 for frame in self.parser.feed(chunk):
                     recv_ts = time.time()
                     self.store.push_frame(frame)
                     if self.recorder is not None:
                         self.recorder.record(frame, recv_ts)
                 self.store.merge_parser_stats(self.parser.stats)
-                self.store.update_status(connected=True)
+                self.store.update_status(connected=not self._inactive_timed_out(),
+                                         bytes_received=bytes_received)
         except serial.SerialException as exc:
             log.warning("serial read error: %s", exc)
         finally:
@@ -183,6 +190,7 @@ class SerialReader(threading.Thread):
             except Exception:
                 pass
             self._port_handle = None
+            self.store.update_status(connected=False, serial_open=False)
 
     # ---- 辅助 ----
     def _open_serial(self):
@@ -205,12 +213,13 @@ class SerialReader(threading.Thread):
             )
         except (serial.SerialException, OSError) as exc:
             log.warning("cannot open %s: %s", target, exc)
-            self.store.update_status(connected=False, port=target)
+            self.store.update_status(connected=False, serial_open=False,
+                                     port=target, baudrate=self.baudrate)
             return None
 
     def _inactive_timed_out(self) -> bool:
         """距离最后有效帧超过 INACTIVE_TIMEOUT_S 视为断连。"""
         lt = self.store.status.last_frame_time
         if lt is None:
-            return False
+            return True
         return (time.time() - lt) > INACTIVE_TIMEOUT_S

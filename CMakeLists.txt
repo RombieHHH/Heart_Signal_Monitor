@@ -53,6 +53,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Src/ecg_monitor.c
     Src/ecg_plot.c
     Src/ecg_protocol.c
+    Src/ecg_bt_protocol.c
     hardware/ecg_app.c
 )
 

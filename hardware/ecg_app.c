@@ -6,7 +6,7 @@
 #include "main.h"
 #include "tim.h"
 #include "usart.h"
-#include "ecg_protocol.h"
+#include "ecg_bt_protocol.h"
 #include <string.h>
 
 /* Optional raw serial stream, compatible with the existing collection tools.
@@ -16,9 +16,29 @@
 #endif
 _Static_assert(AD8232_SAMPLE_RATE_HZ == ECG_MONITOR_RATE, "Filter rate mismatch");
 static ECGMonitor monitor;
-static ECGProtocol protocol;
+static ECGBTProtocol protocol;
 /* Separate storage remains untouched until the UART completes transmission. */
-static uint8_t uart3_frame[ECG_FRAME_SIZE];
+static uint8_t uart3_frame[ECG_BT_FRAME_SIZE];
+static uint16_t uart3_offset = ECG_BT_FRAME_SIZE;
+static uint32_t uart3_next_tick;
+
+#define UART3_CHUNK_BYTES 1U
+#define UART3_CHUNK_INTERVAL_MS 1U
+
+/* Spread a 528-byte frame over ~66 ms instead of a ~6 ms UART burst.
+   Bluetooth transparent transports can buffer differently from USB UARTs. */
+static void PollUart3(void)
+{
+    uint32_t now = HAL_GetTick();
+    if (uart3_offset == ECG_BT_FRAME_SIZE || huart3.gState != HAL_UART_STATE_READY ||
+        (int32_t)(now - uart3_next_tick) < 0) return;
+    uint16_t count = ECG_BT_FRAME_SIZE - uart3_offset;
+    if (count > UART3_CHUNK_BYTES) count = UART3_CHUNK_BYTES;
+    if (HAL_UART_Transmit_IT(&huart3, uart3_frame + uart3_offset, count) == HAL_OK) {
+        uart3_offset += count;
+        uart3_next_tick = now + UART3_CHUNK_INTERVAL_MS;
+    }
+}
 static ECGPlot plot;
 static uint32_t dropped, last_data_tick, info_tick;
 static bool stalled, gap_notice;
@@ -115,7 +135,7 @@ static void DrawInfo(void)
 void ECGApp_Init(void)
 {
     ECGMonitor_Init(&monitor);
-    ECGProtocol_Init(&protocol);
+    ECGBTProtocol_Init(&protocol);
     ECGPlot_Init(&plot);
     LCD_Init();
     LCD_Fill(LCD_COLOR_BLACK);
@@ -135,6 +155,7 @@ void ECGApp_Init(void)
 
 void ECGApp_Poll(void)
 {
+    PollUart3();
     uint16_t sample;
     uint32_t sample_index;
     uint32_t now = HAL_GetTick();
@@ -159,15 +180,17 @@ void ECGApp_Poll(void)
         if (stalled) { ECGMonitor_Init(&monitor); stalled = false; }
         last_data_tick = HAL_GetTick();
         Plot(ECGMonitor_Push(&monitor, sample, AD8232_AreLeadsOff() != 0U));
-        if (ECGProtocol_Push(&protocol, sample_index, sample, &monitor)) {
+        if (ECGBTProtocol_Push(&protocol, sample_index, sample)) {
             bool accepted = false;
-            if (huart3.gState == HAL_UART_STATE_READY) {
+            if (uart3_offset == ECG_BT_FRAME_SIZE && huart3.gState == HAL_UART_STATE_READY) {
                 memcpy(uart3_frame, protocol.data, sizeof(uart3_frame));
-                accepted = HAL_UART_Transmit_IT(&huart3, uart3_frame,
-                                                sizeof(uart3_frame)) == HAL_OK;
+                uart3_offset = 0U;
+                uart3_next_tick = HAL_GetTick();
+                accepted = true;
             }
-            ECGProtocol_Sent(&protocol, accepted);
+            ECGBTProtocol_Sent(&protocol, accepted);
         }
+        PollUart3();
 #if ECG_RAW_SERIAL
         (void)AD8232_TransmitVofa(&huart2, sample);
 #endif

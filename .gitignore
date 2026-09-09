@@ -4,3 +4,4 @@ mx.scratch
 openocd.cfg
 *.pyc
 *csv
+/tests

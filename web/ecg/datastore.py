@@ -12,10 +12,12 @@ ecg_host.ecg.datastore
 
 import threading
 import time
+from collections import deque
 from dataclasses import dataclass
 from typing import Dict, Optional
 
 from .protocol import WaveformFrame
+from .processing import HostECGProcessor
 
 # 默认波形可视窗口样本数：4 s * 500 Hz = 2000
 DEFAULT_WINDOW_SAMPLES = 2000
@@ -25,6 +27,8 @@ DEFAULT_WINDOW_SAMPLES = 2000
 class SystemStatus:
     """串口/系统运行状态快照，供 Web 端展示。"""
     connected: bool = False
+    serial_open: bool = False
+    bytes_received: int = 0
     port: Optional[str] = None
     baudrate: int = 115200
     last_frame_time: Optional[float] = None     # 最近一次有效帧时间戳
@@ -47,7 +51,14 @@ class DataStore:
         self._filtered = []      # 环缓冲（list 模拟，先进先出，长度不超过 cap）
         self._raw = []
         self._r_marks = []       # 与波形等长对齐的 R 事件标记（0/1）
+        self._point_marks = []   # 0 none, 1 R, 2 P, 3 Q, 4 S, 5 T
         self.latest: Optional[WaveformFrame] = None
+        self.processor = HostECGProcessor(500)
+        self._processor_rate = 500
+        self._pending_display = deque()
+        self._landmarks = {}
+        self._previous_frame_seq = None
+        self._last_display_index = None
         self.status = SystemStatus()
         self.status.sample_rate = 500
 
@@ -60,18 +71,57 @@ class DataStore:
             st.sample_rate = frame.sample_rate
             st.frame_seq = frame.frame_seq
             st.last_frame_time = time.time()
-            st.sample_index = frame.sample0 + frame.count - 1
 
-            for rec in frame.samples:
-                self._filtered.append(rec.filtered)
-                self._raw.append(rec.raw)
-                self._r_marks.append(1 if rec.r_seq is not None else 0)
+            if frame.type == 2:
+                if frame.sample_rate != self._processor_rate:
+                    self._processor_rate = frame.sample_rate
+                    self.processor = HostECGProcessor(frame.sample_rate)
+                    self._pending_display.clear()
+                    self._landmarks.clear()
+                if frame.gap or frame.sent_dropped or (self._previous_frame_seq is not None and
+                        frame.frame_seq != ((self._previous_frame_seq + 1) & 0xFFFFFFFF)):
+                    self.processor.reset()
+                    self._pending_display.clear()
+                    self._landmarks.clear()
+                for offset, rec in enumerate(frame.samples):
+                    sequence = frame.sample0 + offset
+                    result = self.processor.push(rec.raw, sequence)
+                    rec.filtered = result.filtered
+                    rec.r_seq = result.r_seq
+                    rec.quality = result.quality
+                    rec.alarm = result.alarm
+                    frame.hr, frame.sd_rr, frame.rmssd_rr = result.hr, result.sdnn, result.rmssd
+                    for marked_sequence, point in result.landmarks:
+                        self._landmarks[marked_sequence] = point
+                    self._pending_display.append((sequence, rec.raw, rec.filtered))
+            self._previous_frame_seq = frame.frame_seq
+            if frame.type == 2:
+                delay = round(0.5 * frame.sample_rate)
+                while len(self._pending_display) > delay:
+                    sequence, raw, filtered = self._pending_display.popleft()
+                    point = self._landmarks.pop(sequence, 0)
+                    self._filtered.append(filtered)
+                    self._raw.append(raw)
+                    self._point_marks.append(point)
+                    self._r_marks.append(1 if point == 1 else 0)
+                    self._last_display_index = sequence
+            else:
+                for rec in frame.samples:
+                    self._filtered.append(rec.filtered)
+                    self._raw.append(rec.raw)
+                    point = 1 if rec.r_seq is not None else 0
+                    self._point_marks.append(point)
+                    self._r_marks.append(1 if point == 1 else 0)
+                self._last_display_index = frame.sample0 + frame.count - 1
+            if self._last_display_index is not None:
+                st.sample_index = self._last_display_index
             # 裁剪到窗口容量
             excess = len(self._filtered) - self._capacity
             if excess > 0:
                 del self._filtered[:excess]
                 del self._raw[:excess]
                 del self._r_marks[:excess]
+                del self._point_marks[:excess]
 
     def update_status(self, **kwargs) -> None:
         with self._lock:
@@ -106,6 +156,8 @@ class DataStore:
 
             data = {
                 "connected": st.connected,
+                "serial_open": st.serial_open,
+                "bytes_received": st.bytes_received,
                 "port": st.port,
                 "baudrate": st.baudrate,
                 "sample_rate": st.sample_rate,
@@ -128,6 +180,7 @@ class DataStore:
                     "filtered": self._filtered[start:],
                     "raw": self._raw[start:],
                     "r_marks": self._r_marks[start:],
+                    "point_marks": self._point_marks[start:],
                 },
             }
             return data

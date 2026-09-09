@@ -28,7 +28,7 @@ from .reader import list_serial_ports
 
 log = logging.getLogger("ecg.server")
 
-# 默认广播周期 100 ms（与下位机帧周期一致）
+# 浏览器按 100 ms 刷新，与紧凑协议帧周期一致。
 DEFAULT_BROADCAST_MS = 100
 # 等待订阅消息的时长；超时视为“只要一次快照”的连接
 SUBSCRIBE_TIMEOUT_S = 2.0
@@ -92,8 +92,10 @@ class WebServer:
             return {
                 "sampling_per_frame": 50,
                 "frame_period_ms": 100,
-                "protocol_version": 1,
-                "frame_type_waveform": 1,
+                "protocol_version": 2,
+                "frame_type_waveform": 2,
+                "transport": "8-bit ADC level, 500 Hz",
+                "landmark_codes": {"R": 1, "P": 2, "Q": 3, "S": 4, "T": 5},
                 "record_fields": [
                     "sample_index", "t_s", "raw_adc", "filtered_count",
                     "r_event_index", "hr_bpm", "sd_rr_ms", "rmssd_rr_ms",

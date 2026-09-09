@@ -31,8 +31,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description="ECG 上位机后端（Python）")
-    p.add_argument("--port", default="auto", help="蓝牙虚拟串口；auto 按 HSM(0023:00:0032AA) 自动识别，或给定如 COM29")
-    p.add_argument("--baud", type=int, default=921600, help="串口波特率（HSM 蓝牙模块为 921600）")
+    p.add_argument("--port", default="COM6", help="蓝牙虚拟串口（默认 COM6）；可指定其他端口或 auto 自动识别 HSM")
+    p.add_argument("--baud", type=int, default=115200, help="串口波特率（默认 115200，与 MCU/HC06 配置一致）")
     p.add_argument("--host", default="0.0.0.0", help="HTTP 监听地址")
     p.add_argument("--http-port", type=int, default=8000, help="HTTP/WebSocket 端口")
     p.add_argument("--record-dir", default=None, help="CSV 记录目录（默认 <项目>/recordings）")

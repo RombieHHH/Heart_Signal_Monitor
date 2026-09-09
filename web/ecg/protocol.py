@@ -17,7 +17,9 @@ ecg_host.ecg.protocol
     | raw(u16) | filtered(i16) | r_seq(u32) | quality(u8) | alarm(u8) |
     +------------------------------------------------------------------------------+
 
-固定开销 28 字节（26 字节头 + 2 字节 CRC16），载荷最大 500 字节。
+版本 1/type 1 是原始 10 字节记录协议。版本 2/type 2 是蓝牙紧凑协议：
+500 Hz、每 100 ms 发送 50 个 8 位 ADC 电平，载荷 50 字节，总帧长 78 字节。
+紧凑值由 12 位 ADC 右移 4 位得到，上位机以量化区间中点恢复。
 
 字段说明：
     sync      同步字 0xA5 0x5A
@@ -56,6 +58,7 @@ SYNC_BYTE_0 = 0xA5
 SYNC_BYTE_1 = 0x5A
 VERSION_DEFAULT = 1
 TYPE_WAVEFORM = 1
+TYPE_COMPACT_LEVEL = 2
 
 SAMPLE_RATE_DEFAULT = 500
 SAMPLES_PER_FRAME_DEFAULT = 50
@@ -108,6 +111,7 @@ class SampleRecord:
     r_seq: Optional[int] = None      # 无 R 事件时为 None
     quality: int = 0
     alarm: int = 0
+    point: int = 0                 # 0 none, 1 R, 2 P, 3 Q, 4 S, 5 T
 
 
 @dataclass
@@ -191,8 +195,11 @@ class FrameParser:
          hr_raw, sd_raw, rm_raw) = _HEADER_STRUCT.unpack_from(self._buf, 0)
 
         # 校验载荷长度合法性
-        if payload_len > MAX_PAYLOAD or count > MAX_COUNT \
-                or payload_len != count * RECORD_SIZE:
+        expected_payload = count if ftype == TYPE_COMPACT_LEVEL else count * RECORD_SIZE
+        valid_type = ((ftype == TYPE_WAVEFORM and version == 1) or
+                      (ftype == TYPE_COMPACT_LEVEL and version == 2))
+        if (not valid_type or payload_len > MAX_PAYLOAD or count > MAX_COUNT
+                or payload_len != expected_payload):
             self.stats["frames_payload_error"] += 1
             self._buf.pop(0)  # 丢弃一个字节重新搜索
             self.stats["recovered_bytes"] += 1
@@ -206,13 +213,16 @@ class FrameParser:
         crc_received = struct.unpack_from("<H", self._buf, HEADER_SIZE + payload_len)[0]
         crc_calc = crc16_ccitt_false(bytes(self._buf[2:HEADER_SIZE + payload_len]))
 
-        consumed = bytes(self._buf[:total])
-        del self._buf[:total]
-
         if crc_received != crc_calc:
             self.stats["frames_crc_error"] += 1
+            # Lost bytes can put the next valid header inside this candidate.
+            # Advance one byte so that header is not discarded with the bad frame.
+            del self._buf[0]
+            self.stats["recovered_bytes"] += 1
             return self.SEARCH_RETRY
 
+        consumed = bytes(self._buf[:total])
+        del self._buf[:total]
         self.stats["frames_ok"] += 1
         return self._build_frame(
             version, ftype, flags, frame_seq, sample0,
@@ -234,7 +244,11 @@ class FrameParser:
             rmssd_rr=(rm_raw / 10.0 if rm_raw != INVALID_U16 else None),
         )
 
-        payload = full_frame[HEADER_SIZE:HEADER_SIZE + count * RECORD_SIZE]
+        payload = full_frame[HEADER_SIZE:HEADER_SIZE + (count if ftype == TYPE_COMPACT_LEVEL else count * RECORD_SIZE)]
+        if ftype == TYPE_COMPACT_LEVEL:
+            for value in payload:
+                frame.samples.append(SampleRecord(raw=(value << 4) + 8))
+            return frame
         off = 0
         for _ in range(count):
             raw, filtered_raw, r_seq, quality, alarm = struct.unpack_from(

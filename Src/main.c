@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "dma.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
@@ -38,6 +39,11 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define LCD_PLOT_TOP            52U
+#define LCD_PLOT_HEIGHT         184U
+#define LCD_PLOT_INTERVAL_MS    10U
+#define LCD_INFO_INTERVAL_MS    100U
+#define ADC_12_BIT_MAX_VALUE    4095U
 
 /* USER CODE END PD */
 
@@ -60,6 +66,46 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+static uint16_t LCD_MapAdcSampleToY(uint16_t sample)
+{
+  uint32_t inverted_sample;
+
+  if (sample > ADC_12_BIT_MAX_VALUE)
+  {
+    sample = ADC_12_BIT_MAX_VALUE;
+  }
+
+  inverted_sample = (uint32_t)(ADC_12_BIT_MAX_VALUE - sample);
+  return (uint16_t)(LCD_PLOT_TOP +
+                    (inverted_sample * (LCD_PLOT_HEIGHT - 1U)) /
+                    ADC_12_BIT_MAX_VALUE);
+}
+
+static void LCD_DrawAdcWaveformColumn(uint16_t x, uint16_t minimum_sample,
+                                      uint16_t maximum_sample,
+                                      uint16_t previous_sample)
+{
+  uint16_t line_top;
+  uint16_t line_bottom;
+  uint16_t previous_y;
+
+  line_top = LCD_MapAdcSampleToY(maximum_sample);
+  line_bottom = LCD_MapAdcSampleToY(minimum_sample);
+  previous_y = LCD_MapAdcSampleToY(previous_sample);
+
+  if (previous_y < line_top)
+  {
+    line_top = previous_y;
+  }
+  if (previous_y > line_bottom)
+  {
+    line_bottom = previous_y;
+  }
+
+  LCD_FillRect(x, LCD_PLOT_TOP, 1U, LCD_PLOT_HEIGHT, LCD_COLOR_BLACK);
+  LCD_FillRect(x, line_top, 1U, (uint16_t)(line_bottom - line_top + 1U),
+               LCD_COLOR_GREEN);
+}
 
 /* USER CODE END 0 */
 
@@ -72,7 +118,15 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   uint16_t sample = 0U;
-  uint32_t lcd_update_tick;
+  uint16_t plot_minimum = 0U;
+  uint16_t plot_maximum = 0U;
+  uint16_t plot_latest = 0U;
+  uint16_t plot_previous = 0U;
+  uint16_t plot_x = 0U;
+  uint32_t plot_update_tick;
+  uint32_t info_update_tick;
+  uint8_t plot_has_samples = 0U;
+  uint8_t plot_has_previous = 0U;
 
   /* USER CODE END 1 */
 
@@ -94,24 +148,28 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_ADC2_Init();
+  MX_DMA_Init();
   MX_SPI2_Init();
   MX_TIM1_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
+  MX_ADC1_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
   LCD_Init();
   LCD_Fill(LCD_COLOR_BLACK);
-  LCD_DrawString(84U, 12U, "AD8232", 2U, LCD_COLOR_CYAN);
-  LCD_DrawString(18U, 64U, "RAW", 2U, LCD_COLOR_WHITE);
-  LCD_DrawString(18U, 160U, "LEADS", 2U, LCD_COLOR_WHITE);
+  LCD_DrawString(84U, 4U, "AD8232", 2U, LCD_COLOR_CYAN);
+  LCD_DrawString(6U, 26U, "RAW", 1U, LCD_COLOR_WHITE);
+  LCD_DrawUInt16(36U, 24U, 0U, 4U, 2U, LCD_COLOR_GREEN);
+  LCD_DrawString(140U, 26U, "LEADS", 1U, LCD_COLOR_WHITE);
 
   if (AD8232_Init() != HAL_OK)
   {
     Error_Handler();
   }
-  lcd_update_tick = HAL_GetTick();
+  plot_update_tick = HAL_GetTick();
+  info_update_tick = plot_update_tick;
 
   /* USER CODE END 2 */
 
@@ -119,27 +177,71 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    if (AD8232_ReadSample(&sample) != 0U)
+    while (AD8232_ReadSample(&sample) != 0U)
     {
-      (void)AD8232_TransmitVofa(&huart2, sample);
-    }
-
-    if ((HAL_GetTick() - lcd_update_tick) >= 100U)
-    {
-      lcd_update_tick = HAL_GetTick();
-      sample = AD8232_GetLatestSample();
-
-      LCD_FillRect(18U, 94U, 120U, 32U, LCD_COLOR_BLACK);
-      LCD_DrawUInt16(18U, 96U, sample, 4U, 4U, LCD_COLOR_GREEN);
-
-      LCD_FillRect(114U, 158U, 108U, 20U, LCD_COLOR_BLACK);
-      if (AD8232_AreLeadsOff() != 0U)
+      if (plot_has_samples == 0U)
       {
-        LCD_DrawString(120U, 160U, "OFF", 2U, LCD_COLOR_RED);
+        plot_minimum = sample;
+        plot_maximum = sample;
+        plot_has_samples = 1U;
       }
       else
       {
-        LCD_DrawString(120U, 160U, "OK", 2U, LCD_COLOR_GREEN);
+        if (sample < plot_minimum)
+        {
+          plot_minimum = sample;
+        }
+        if (sample > plot_maximum)
+        {
+          plot_maximum = sample;
+        }
+      }
+      plot_latest = sample;
+
+      (void)AD8232_TransmitVofa(&huart2, sample);
+    }
+
+    if ((HAL_GetTick() - plot_update_tick) >= LCD_PLOT_INTERVAL_MS)
+    {
+      plot_update_tick = HAL_GetTick();
+
+      if (plot_has_samples != 0U)
+      {
+        if (plot_has_previous == 0U)
+        {
+          plot_previous = plot_latest;
+          plot_has_previous = 1U;
+        }
+
+        LCD_DrawAdcWaveformColumn(plot_x, plot_minimum, plot_maximum,
+                                  plot_previous);
+        plot_previous = plot_latest;
+        plot_has_samples = 0U;
+
+        ++plot_x;
+        if (plot_x >= LCD_WIDTH)
+        {
+          plot_x = 0U;
+        }
+      }
+    }
+
+    if ((HAL_GetTick() - info_update_tick) >= LCD_INFO_INTERVAL_MS)
+    {
+      info_update_tick = HAL_GetTick();
+      sample = AD8232_GetLatestSample();
+
+      LCD_FillRect(36U, 22U, 56U, 18U, LCD_COLOR_BLACK);
+      LCD_DrawUInt16(36U, 24U, sample, 4U, 2U, LCD_COLOR_GREEN);
+
+      LCD_FillRect(180U, 24U, 54U, 12U, LCD_COLOR_BLACK);
+      if (AD8232_AreLeadsOff() != 0U)
+      {
+        LCD_DrawString(180U, 26U, "OFF", 1U, LCD_COLOR_RED);
+      }
+      else
+      {
+        LCD_DrawString(180U, 26U, "OK", 1U, LCD_COLOR_GREEN);
       }
     }
     /* USER CODE END WHILE */

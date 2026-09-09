@@ -2,25 +2,52 @@
 
 #include "adc.h"
 #include "main.h"
+#include "tim.h"
 
 #include <stddef.h>
 
 #define AD8232_SAMPLE_BUFFER_SIZE 256U
 #define AD8232_SAMPLE_BUFFER_MASK (AD8232_SAMPLE_BUFFER_SIZE - 1U)
+#define AD8232_DMA_BUFFER_SIZE    10U
+#define AD8232_DMA_HALF_SIZE      (AD8232_DMA_BUFFER_SIZE / 2U)
 #define AD8232_UART_TIMEOUT_MS    5U
 
+static uint16_t adc_dma_buffer[AD8232_DMA_BUFFER_SIZE];
 static volatile uint16_t sample_buffer[AD8232_SAMPLE_BUFFER_SIZE];
 static volatile uint16_t sample_head;
 static volatile uint16_t sample_tail;
 static volatile uint16_t latest_sample;
 static volatile uint32_t dropped_sample_count;
-static volatile uint8_t sampling_enabled;
+
+static void AD8232_PushDmaSamples(const uint16_t *samples, uint16_t count)
+{
+    uint16_t index;
+    uint16_t next_head;
+    uint16_t sample;
+
+    for (index = 0U; index < count; ++index)
+    {
+        sample = samples[index];
+        latest_sample = sample;
+
+        next_head = (uint16_t)((sample_head + 1U) &
+                               AD8232_SAMPLE_BUFFER_MASK);
+        if (next_head != sample_tail)
+        {
+            sample_buffer[sample_head] = sample;
+            sample_head = next_head;
+        }
+        else
+        {
+            ++dropped_sample_count;
+        }
+    }
+}
 
 HAL_StatusTypeDef AD8232_Init(void)
 {
     HAL_StatusTypeDef status;
 
-    sampling_enabled = 0U;
     sample_head = 0U;
     sample_tail = 0U;
     latest_sample = 0U;
@@ -28,58 +55,43 @@ HAL_StatusTypeDef AD8232_Init(void)
 
     HAL_GPIO_WritePin(AD8232_SDN_GPIO_Port, AD8232_SDN_Pin, GPIO_PIN_SET);
 
-    status = HAL_ADCEx_Calibration_Start(&hadc2);
+    status = HAL_ADCEx_Calibration_Start(&hadc1);
     if (status != HAL_OK)
     {
         return status;
     }
 
-    status = HAL_ADC_Start(&hadc2);
-    if (status == HAL_OK)
+    status = HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_dma_buffer,
+                               AD8232_DMA_BUFFER_SIZE);
+    if (status != HAL_OK)
     {
-        sampling_enabled = 1U;
+        return status;
+    }
+
+    __HAL_TIM_SET_COUNTER(&htim3, 0U);
+    status = HAL_TIM_Base_Start(&htim3);
+    if (status != HAL_OK)
+    {
+        (void)HAL_ADC_Stop_DMA(&hadc1);
     }
 
     return status;
 }
 
-void AD8232_SampleTick1kHz(void)
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc)
 {
-    uint16_t sample;
-    uint16_t next_head;
-
-    if (sampling_enabled == 0U)
+    if (hadc->Instance == ADC1)
     {
-        return;
+        AD8232_PushDmaSamples(&adc_dma_buffer[0], AD8232_DMA_HALF_SIZE);
     }
+}
 
-    if (__HAL_ADC_GET_FLAG(&hadc2, ADC_FLAG_EOC) == RESET)
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+{
+    if (hadc->Instance == ADC1)
     {
-        return;
-    }
-
-    if (HAL_ADC_PollForConversion(&hadc2, 0U) != HAL_OK)
-    {
-        return;
-    }
-
-    sample = (uint16_t)HAL_ADC_GetValue(&hadc2);
-    latest_sample = sample;
-
-    next_head = (uint16_t)((sample_head + 1U) & AD8232_SAMPLE_BUFFER_MASK);
-    if (next_head != sample_tail)
-    {
-        sample_buffer[sample_head] = sample;
-        sample_head = next_head;
-    }
-    else
-    {
-        ++dropped_sample_count;
-    }
-
-    if (HAL_ADC_Start(&hadc2) != HAL_OK)
-    {
-        sampling_enabled = 0U;
+        AD8232_PushDmaSamples(&adc_dma_buffer[AD8232_DMA_HALF_SIZE],
+                              AD8232_DMA_HALF_SIZE);
     }
 }
 

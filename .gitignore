@@ -3,3 +3,4 @@ mx.scratch
 !.settings
 openocd.cfg
 *.pyc
+*csv

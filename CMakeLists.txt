@@ -44,7 +44,16 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+    hardware/ad8232.c
     hardware/lcd.c
+    Src/ecg_preprocess.c
+    Src/qrs_detector.c
+    Src/heart_rate.c
+    Src/hrv.c
+    Src/ecg_monitor.c
+    Src/ecg_plot.c
+    Src/ecg_protocol.c
+    hardware/ecg_app.c
 )
 
 # Add include paths
@@ -65,4 +74,12 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
 
     # Add user defined libraries
+)
+
+add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${CMAKE_PROJECT_NAME}>
+        ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.hex
+    COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${CMAKE_PROJECT_NAME}>
+        ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.bin
+    VERBATIM
 )

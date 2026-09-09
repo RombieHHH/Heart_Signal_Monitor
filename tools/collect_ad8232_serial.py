@@ -14,9 +14,14 @@ from typing import Any
 
 DEFAULT_BAUD_RATE = 115200
 DEFAULT_DURATION_SECONDS = 120.0
-SERIAL_READ_TIMEOUT_SECONDS = 0.2
+DEFAULT_SAMPLE_RATE_HZ = 500.0
+SERIAL_READ_TIMEOUT_SECONDS = 0.05
+SERIAL_READ_CHUNK_SIZE = 4096
+SERIAL_PENDING_LIMIT_BYTES = 65536
 CSV_FLUSH_INTERVAL_SAMPLES = 1000
 PROGRESS_INTERVAL_SECONDS = 10.0
+ADC_MIN_VALUE = 0
+ADC_MAX_VALUE = 4095
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -46,6 +51,16 @@ def parse_arguments() -> argparse.Namespace:
         help="Capture duration in seconds (default: %(default)s).",
     )
     parser.add_argument(
+        "-r",
+        "--sample-rate",
+        type=float,
+        default=DEFAULT_SAMPLE_RATE_HZ,
+        help=(
+            "Expected ADC sample rate in Hz, used for completeness checks and "
+            "the nominal_sample_seconds column (default: %(default)s)."
+        ),
+    )
+    parser.add_argument(
         "-o",
         "--output",
         type=Path,
@@ -67,6 +82,8 @@ def parse_arguments() -> argparse.Namespace:
         parser.error("--baud-rate must be greater than zero")
     if arguments.duration <= 0.0:
         parser.error("--duration must be greater than zero")
+    if arguments.sample_rate <= 0.0:
+        parser.error("--sample-rate must be greater than zero")
 
     return arguments
 
@@ -109,14 +126,33 @@ def choose_output_path(requested_path: Path | None) -> Path:
 
 
 def parse_sample(raw_line: bytes) -> int | None:
-    text = raw_line.decode("ascii", errors="ignore").strip()
-    if not text:
+    try:
+        text = raw_line.decode("ascii").strip()
+    except UnicodeDecodeError:
+        return None
+
+    if not text or not text.isdecimal():
         return None
 
     try:
-        return int(text, 10)
+        sample = int(text, 10)
     except ValueError:
         return None
+
+    if sample < ADC_MIN_VALUE or sample > ADC_MAX_VALUE:
+        return None
+    return sample
+
+
+def take_complete_lines(pending: bytearray) -> list[bytes]:
+    """Remove and return all LF-terminated lines currently in pending."""
+    last_newline = pending.rfind(b"\n")
+    if last_newline < 0:
+        return []
+
+    complete = bytes(pending[: last_newline + 1])
+    del pending[: last_newline + 1]
+    return complete.splitlines()
 
 
 def collect_samples(
@@ -124,6 +160,7 @@ def collect_samples(
     port: str,
     baud_rate: int,
     duration_seconds: float,
+    sample_rate_hz: float,
     output_path: Path,
 ) -> int:
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -133,6 +170,10 @@ def collect_samples(
     interrupted = False
     start_monotonic = 0.0
     elapsed = 0.0
+    pending = bytearray()
+    synchronized = False
+    partial_line_discarded = False
+    next_flush_sample = CSV_FLUSH_INTERVAL_SAMPLES
 
     try:
         with serial_module.Serial(
@@ -144,14 +185,17 @@ def collect_samples(
             timeout=SERIAL_READ_TIMEOUT_SECONDS,
         ) as serial_port:
             serial_port.reset_input_buffer()
-            # Synchronize to the next complete CR/LF-delimited sample. The
-            # first bytes received after opening may belong to a partial line.
-            serial_port.readline()
 
             with output_path.open("x", newline="", encoding="utf-8") as csv_file:
                 writer = csv.writer(csv_file)
                 writer.writerow(
-                    ("sample_index", "elapsed_seconds", "timestamp", "raw_adc")
+                    (
+                        "sample_index",
+                        "elapsed_seconds",
+                        "timestamp",
+                        "raw_adc",
+                        "nominal_sample_seconds",
+                    )
                 )
 
                 start_wall_time = datetime.now().astimezone()
@@ -175,43 +219,77 @@ def collect_samples(
                         serial_port.timeout = min(
                             SERIAL_READ_TIMEOUT_SECONDS, remaining
                         )
-                        raw_line = serial_port.readline()
+                        raw_chunk = serial_port.read(SERIAL_READ_CHUNK_SIZE)
                         received_at = time.monotonic()
-                        if received_at > deadline:
-                            break
 
-                        if not raw_line:
+                        if not raw_chunk:
                             continue
 
-                        sample = parse_sample(raw_line)
-                        if sample is None:
+                        pending.extend(raw_chunk)
+
+                        # Opening a running serial stream may begin in the
+                        # middle of a number. Discard only that first fragment.
+                        if not synchronized:
+                            first_newline = pending.find(b"\n")
+                            if first_newline < 0:
+                                if len(pending) > SERIAL_PENDING_LIMIT_BYTES:
+                                    pending.clear()
+                                    invalid_line_count += 1
+                                continue
+                            del pending[: first_newline + 1]
+                            synchronized = True
+
+                        lines = take_complete_lines(pending)
+                        if len(pending) > SERIAL_PENDING_LIMIT_BYTES:
+                            pending.clear()
+                            synchronized = False
                             invalid_line_count += 1
-                            continue
 
-                        elapsed = received_at - start_monotonic
-                        timestamp = start_wall_time + timedelta(seconds=elapsed)
-                        writer.writerow(
-                            (
-                                sample_count,
-                                f"{elapsed:.6f}",
-                                timestamp.isoformat(timespec="milliseconds"),
-                                sample,
-                            )
+                        receive_elapsed = received_at - start_monotonic
+                        timestamp = start_wall_time + timedelta(
+                            seconds=receive_elapsed
                         )
-                        sample_count += 1
+                        timestamp_text = timestamp.isoformat(timespec="milliseconds")
+                        output_rows = []
 
-                        if sample_count % CSV_FLUSH_INTERVAL_SAMPLES == 0:
+                        for raw_line in lines:
+                            sample = parse_sample(raw_line)
+                            if sample is None:
+                                invalid_line_count += 1
+                                continue
+
+                            nominal_sample_seconds = sample_count / sample_rate_hz
+                            output_rows.append(
+                                (
+                                    sample_count,
+                                    f"{receive_elapsed:.6f}",
+                                    timestamp_text,
+                                    sample,
+                                    f"{nominal_sample_seconds:.6f}",
+                                )
+                            )
+                            sample_count += 1
+
+                        if output_rows:
+                            writer.writerows(output_rows)
+
+                        if sample_count >= next_flush_sample:
                             csv_file.flush()
+                            while sample_count >= next_flush_sample:
+                                next_flush_sample += CSV_FLUSH_INTERVAL_SAMPLES
 
                         if received_at >= next_progress:
+                            elapsed = receive_elapsed
                             print(
                                 f"{elapsed:6.1f} s: {sample_count} samples "
                                 f"received"
                             )
-                            next_progress += PROGRESS_INTERVAL_SECONDS
+                            while received_at >= next_progress:
+                                next_progress += PROGRESS_INTERVAL_SECONDS
                 except KeyboardInterrupt:
                     interrupted = True
                 finally:
+                    partial_line_discarded = bool(pending)
                     csv_file.flush()
 
     except FileExistsError:
@@ -227,11 +305,21 @@ def collect_samples(
     if start_monotonic != 0.0:
         elapsed = min(time.monotonic() - start_monotonic, duration_seconds)
     sample_rate = sample_count / elapsed if elapsed > 0.0 else 0.0
+    expected_samples = round(duration_seconds * sample_rate_hz)
+    completeness = (
+        (sample_count / expected_samples) * 100.0 if expected_samples > 0 else 0.0
+    )
     state = "Capture stopped" if interrupted else "Capture complete"
     print(
         f"{state}: {sample_count} valid samples, "
         f"{invalid_line_count} invalid lines, {sample_rate:.1f} samples/s."
     )
+    print(
+        f"Expected about {expected_samples} samples at {sample_rate_hz:g} Hz; "
+        f"capture completeness: {completeness:.2f}%."
+    )
+    if partial_line_discarded:
+        print("One incomplete trailing serial line was discarded.")
     print(f"Saved to: {output_path}")
     return 130 if interrupted else 0
 
@@ -254,6 +342,7 @@ def main() -> int:
         port=arguments.port,
         baud_rate=arguments.baud_rate,
         duration_seconds=arguments.duration,
+        sample_rate_hz=arguments.sample_rate,
         output_path=output_path,
     )
 

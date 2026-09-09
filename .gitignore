@@ -2,3 +2,4 @@ build
 mx.scratch
 !.settings
 openocd.cfg
+*csv

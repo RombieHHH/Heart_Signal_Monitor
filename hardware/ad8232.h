@@ -12,6 +12,7 @@ uint8_t AD8232_ReadSample(uint16_t *sample);
 uint16_t AD8232_GetLatestSample(void);
 uint8_t AD8232_AreLeadsOff(void);
 uint32_t AD8232_GetDroppedSampleCount(void);
+void AD8232_DiscardPending(void);
 HAL_StatusTypeDef AD8232_TransmitVofa(UART_HandleTypeDef *uart,
                                       uint16_t sample);
 

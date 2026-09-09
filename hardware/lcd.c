@@ -78,6 +78,19 @@ static void LCD_SetAddressWindow(uint16_t x0, uint16_t y0, uint16_t x1,
     LCD_WriteCommand(LCD_CMD_RAMWR);
 }
 
+void LCD_DrawColorColumn(uint16_t x, uint16_t y, const uint16_t *pixels, uint16_t height)
+{
+    uint8_t data[2U * LCD_HEIGHT];
+    if (!pixels || x >= LCD_WIDTH || y >= LCD_HEIGHT || !height) return;
+    if (height > LCD_HEIGHT - y) height = LCD_HEIGHT - y;
+    for (uint16_t i = 0; i < height; ++i) {
+        data[2U*i] = (uint8_t)(pixels[i] >> 8);
+        data[2U*i+1U] = (uint8_t)pixels[i];
+    }
+    LCD_SetAddressWindow(x, y, x, y + height - 1U);
+    LCD_WriteData(data, 2U * height);
+}
+
 void LCD_SetBacklight(uint8_t enabled)
 {
     HAL_GPIO_WritePin(LCD_BL_GPIO_Port, LCD_BL_Pin,
@@ -236,6 +249,15 @@ static const uint8_t *LCD_GetGlyph(char character)
 
     switch (character)
     {
+        case 'C': { static const uint8_t g[5] = {0x3E,0x41,0x41,0x41,0x22}; return g; }
+        case 'P': { static const uint8_t g[5] = {0x7F,0x09,0x09,0x09,0x06}; return g; }
+        case 'U': { static const uint8_t g[5] = {0x3F,0x40,0x40,0x40,0x3F}; return g; }
+        case 'V': { static const uint8_t g[5] = {0x1F,0x20,0x40,0x20,0x1F}; return g; }
+        case 'Y': { static const uint8_t g[5] = {0x07,0x08,0x70,0x08,0x07}; return g; }
+        case 'Z': { static const uint8_t g[5] = {0x61,0x51,0x49,0x45,0x43}; return g; }
+        case 'X': { static const uint8_t g[5] = {0x63,0x14,0x08,0x14,0x63}; return g; }
+        case '-': { static const uint8_t g[5] = {0x08,0x08,0x08,0x08,0x08}; return g; }
+        case '.': { static const uint8_t g[5] = {0,0x60,0x60,0,0}; return g; }
         case 'A': return glyph_a;
         case 'B': return glyph_b;
         case 'D': return glyph_d;
@@ -265,6 +287,46 @@ static const uint8_t *LCD_GetGlyph(char character)
         case '9': return glyph_9;
         default: return blank;
     }
+}
+
+void LCD_UpdateTextField(LCDTextField *field, uint16_t x, uint16_t y,
+                         const char *text, uint8_t cells, uint8_t scale,
+                         uint16_t foreground, uint16_t background)
+{
+    /* Compose a complete character (including blank pixels) before writing.
+       There is no clear-then-draw black interval and no full-screen buffer. */
+    uint8_t pixels[12U * 14U * 2U];
+    if (!field || !text || !cells || cells > sizeof(field->text) ||
+        !scale || scale > 2U || x + cells * 6U * scale > LCD_WIDTH ||
+        y + 7U * scale > LCD_HEIGHT) return;
+    uint16_t width = 6U * scale, height = 7U * scale;
+    uint8_t color_changed = !field->initialized || field->foreground != foreground ||
+                            field->background != background;
+    uint8_t ended = 0U;
+    for (uint8_t cell = 0U; cell < cells; ++cell) {
+        char c = ' ';
+        if (!ended) {
+            c = text[cell];
+            if (!c) { c = ' '; ended = 1U; }
+        }
+        if (!color_changed && field->text[cell] == c) continue;
+        const uint8_t *glyph = LCD_GetGlyph(c);
+        for (uint16_t row = 0U; row < height; ++row)
+            for (uint16_t col = 0U; col < width; ++col) {
+                uint16_t color = (col / scale < 5U &&
+                    (glyph[col / scale] & (1U << (row / scale)))) ? foreground : background;
+                uint16_t offset = 2U * (row * width + col);
+                pixels[offset] = (uint8_t)(color >> 8);
+                pixels[offset + 1U] = (uint8_t)color;
+            }
+        uint16_t left = x + cell * width;
+        LCD_SetAddressWindow(left, y, left + width - 1U, y + height - 1U);
+        LCD_WriteData(pixels, 2U * width * height);
+        field->text[cell] = c;
+    }
+    field->foreground = foreground;
+    field->background = background;
+    field->initialized = 1U;
 }
 
 void LCD_DrawString(uint16_t x, uint16_t y, const char *text, uint8_t scale,

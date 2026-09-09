@@ -138,6 +138,14 @@ uint32_t AD8232_GetDroppedSampleCount(void)
     return dropped_sample_count;
 }
 
+void AD8232_DiscardPending(void)
+{
+    uint32_t primask = __get_PRIMASK();
+    __disable_irq();
+    sample_tail = sample_head;
+    __set_PRIMASK(primask);
+}
+
 HAL_StatusTypeDef AD8232_TransmitVofa(UART_HandleTypeDef *uart,
                                       uint16_t sample)
 {

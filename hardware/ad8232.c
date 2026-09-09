@@ -14,6 +14,8 @@
 
 static uint16_t adc_dma_buffer[AD8232_DMA_BUFFER_SIZE];
 static volatile uint16_t sample_buffer[AD8232_SAMPLE_BUFFER_SIZE];
+static volatile uint32_t sample_indices[AD8232_SAMPLE_BUFFER_SIZE];
+static uint32_t acquisition_index;
 static volatile uint16_t sample_head;
 static volatile uint16_t sample_tail;
 static volatile uint16_t latest_sample;
@@ -35,12 +37,14 @@ static void AD8232_PushDmaSamples(const uint16_t *samples, uint16_t count)
         if (next_head != sample_tail)
         {
             sample_buffer[sample_head] = sample;
+            sample_indices[sample_head] = acquisition_index;
             sample_head = next_head;
         }
         else
         {
             ++dropped_sample_count;
         }
+        ++acquisition_index;
     }
 }
 
@@ -52,6 +56,7 @@ HAL_StatusTypeDef AD8232_Init(void)
     sample_tail = 0U;
     latest_sample = 0U;
     dropped_sample_count = 0U;
+    acquisition_index = 0U;
 
     HAL_GPIO_WritePin(AD8232_SDN_GPIO_Port, AD8232_SDN_Pin, GPIO_PIN_SET);
 
@@ -97,9 +102,15 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 uint8_t AD8232_ReadSample(uint16_t *sample)
 {
+    uint32_t index;
+    return AD8232_ReadIndexedSample(sample, &index);
+}
+
+uint8_t AD8232_ReadIndexedSample(uint16_t *sample, uint32_t *index)
+{
     uint16_t tail;
 
-    if (sample == NULL)
+    if (sample == NULL || index == NULL)
     {
         return 0U;
     }
@@ -111,6 +122,7 @@ uint8_t AD8232_ReadSample(uint16_t *sample)
     }
 
     *sample = sample_buffer[tail];
+    *index = sample_indices[tail];
     sample_tail = (uint16_t)((tail + 1U) & AD8232_SAMPLE_BUFFER_MASK);
     return 1U;
 }

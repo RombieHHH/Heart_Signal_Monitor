@@ -9,6 +9,7 @@
 
 HAL_StatusTypeDef AD8232_Init(void);
 uint8_t AD8232_ReadSample(uint16_t *sample);
+uint8_t AD8232_ReadIndexedSample(uint16_t *sample, uint32_t *index);
 uint16_t AD8232_GetLatestSample(void);
 uint8_t AD8232_AreLeadsOff(void);
 uint32_t AD8232_GetDroppedSampleCount(void);

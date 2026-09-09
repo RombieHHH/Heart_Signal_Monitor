@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>ECG Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style id="theme-vars">
+/* ============================================================
+   Medical Monitor - Dark Theme (Forced Dark)
+   ============================================================ */
+:root {
+  /* Backgrounds */
+  --bg-deep: #0a0a0c;
+  --bg-card: rgba(28, 28, 32, 0.6);
+  --bg-card-strong: rgba(20, 20, 24, 0.8);
+  --bg-elevated: rgba(36, 36, 42, 0.5);
+
+  /* Text */
+  --text-primary: #f5f5f7;
+  --text-secondary: #8e8e93;
+  --text-tertiary: #636366;
+
+  /* Border */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.1);
+
+  /* Accent Colors */
+  --accent-green: #30D158;
+  --accent-green-dim: rgba(48, 209, 88, 0.15);
+  --accent-red: #FF453A;
+  --accent-red-dim: rgba(255, 69, 58, 0.15);
+  --accent-orange: #FF9F0A;
+  --accent-orange-dim: rgba(255, 159, 10, 0.15);
+  --accent-blue: #0A84FF;
+  --accent-blue-dim: rgba(10, 132, 255, 0.15);
+
+  /* ECG Waveform */
+  --ecg-wave-color: #30D158;
+  --ecg-grid-major: rgba(48, 209, 88, 0.06);
+  --ecg-grid-minor: rgba(48, 209, 88, 0.03);
+  --ecg-scan-glow: rgba(48, 209, 88, 0.4);
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "Menlo", "Monaco", "Courier New", monospace;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-glow-green: 0 0 20px rgba(48, 209, 88, 0.3);
+  --shadow-glow-red: 0 0 20px rgba(255, 69, 58, 0.3);
+
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================
+   Reset & Base
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Subtle radial gradient background overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(48, 209, 88, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(10, 132, 255, 0.02) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================
+   Layout Structure
+   ============================================================ */
+.app-container {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ============================================================
+   Top Status Bar
+   ============================================================ */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.status-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.device-name {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-indicator-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.status-indicator-dot.connected {
+  background: var(--accent-green);
+  box-shadow: 0 0 8px rgba(48, 209, 88, 0.5);
+}
+
+.status-indicator-dot.connected::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  opacity: 0.3;
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.4; }
+  50%, 100% { transform: scale(1.6); opacity: 0; }
+}
+
+.status-indicator-dot.disconnected {
+  background: var(--accent-red);
+}
+
+.status-indicator-dot.connecting {
+  background: var(--accent-orange);
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.status-indicator-text {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   Main Content Area
+   ============================================================ */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 0;
+}
+
+/* ============================================================
+   Heart Rate Display Section
+   ============================================================ */
+.hr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.hr-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+}
+
+.hr-icon {
+  width: 28px;
+  height: 28px;
+  margin-right: 12px;
+  margin-bottom: 12px;
+  color: var(--accent-green);
+  animation: heartbeat-anim 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes heartbeat-anim {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.18); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.1); }
+  60% { transform: scale(1); }
+}
+
+.hr-number {
+  font-family: var(--font-mono);
+  font-size: clamp(4rem, 14vw, 7rem);
+  font-weight: 200;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  color: var(--accent-green);
+  transition: color var(--transition-base);
+  text-shadow: 0 0 30px rgba(48, 209, 88, 0.2);
+}
+
+.hr-number.abnormal {
+  color: var(--accent-red);
+  text-shadow: 0 0 30px rgba(255, 69, 58, 0.3);
+  animation: hr-alarm-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes hr-alarm-pulse {
+  0%, 100% { text-shadow: 0 0 30px rgba(255, 69, 58, 0.2); }
+  50% { text-shadow: 0 0 50px rgba(255, 69, 58, 0.5); }
+}
+
+.hr-unit {
+  font-family: var(--font-mono);
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-weight: 400;
+  color: var(--text-tertiary);
+  margin-left: 8px;
+  margin-bottom: 8px;
+}
+
+.hr-label {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.hr-status {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   Waveform Section
+   ============================================================ */
+.waveform-section {
+  flex: 1;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.waveform-card {
+  flex: 1;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: border-color var(--transition-base);
+}
+
+.waveform-card:hover {
+  border-color: var(--border-strong);
+}
+
+.waveform-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%);
+}
+
+.waveform-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.waveform-title svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-green);
+}
+
+.waveform-info {
+  display: flex;
+  gap: 20px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.waveform-info-item {
+  display: flex;
+  gap: 6px;
+}
+
+.waveform-info-label {
+  color: var(--text-tertiary);
+  opacity: 0.7;
+}
+
+.waveform-info-value {
+  color: var(--text-secondary);
+}
+
+.waveform-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+  flex: 1;
+}
+
+#ecgCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.waveform-lead-label {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: rgba(48, 209, 88, 0.4);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.waveform-scale-label {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: rgba(48, 209, 88, 0.3);
+  pointer-events: none;
+}
+
+/* ============================================================
+   Metrics Cards Row
+   ============================================================ */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.metric-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.metric-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.metric-card-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+}
+
+.metric-card-value {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.metric-card-value.accent {
+  color: var(--accent-green);
+}
+
+.metric-card-value.warning {
+  color: var(--accent-orange);
+}
+
+.metric-card-value.danger {
+  color: var(--accent-red);
+}
+
+.metric-card-unit {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  margin-left: 4px;
+  font-family: var(--font-sans);
+}
+
+.metric-card-desc {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.metric-card-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.metric-card-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.metric-card-status-dot.ok {
+  background: var(--accent-green);
+  box-shadow: 0 0 6px rgba(48, 209, 88, 0.5);
+}
+
+.metric-card-status-dot.warning {
+  background: var(--accent-orange);
+  box-shadow: 0 0 6px rgba(255, 159, 10, 0.5);
+}
+
+.metric-card-status-dot.error {
+  background: var(--accent-red);
+  box-shadow: 0 0 6px rgba(255, 69, 58, 0.5);
+}
+
+.metric-card-status-dot.neutral {
+  background: var(--text-tertiary);
+}
+
+.metric-card-status-text {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   Bottom Info Bar
+   ============================================================ */
+.bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.bottom-bar-left,
+.bottom-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bottom-bar-item {
+  display: flex;
+  gap: 5px;
+}
+
+.bottom-bar-label {
+  opacity: 0.6;
+}
+
+.bottom-bar-value {
+  color: var(--text-secondary);
+}
+
+.demo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: var(--accent-orange-dim);
+  border-radius: 999px;
+  color: var(--accent-orange);
+  font-weight: 500;
+  font-size: 0.65rem;
+  font-family: var(--font-sans);
+  border: 1px solid rgba(255, 159, 10, 0.2);
+}
+
+.demo-badge svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* ============================================================
+   Reconnect Overlay
+   ============================================================ */
+.reconnect-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.reconnect-overlay.visible {
+  display: flex;
+  animation: fade-in 0.3s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.reconnect-modal {
+  background: var(--bg-card-strong);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border-radius: var(--radius-xl);
+  padding: 36px 32px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-subtle);
+  animation: slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.reconnect-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-red-dim);
+  border-radius: 50%;
+  color: var(--accent-red);
+}
+
+.reconnect-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.reconnect-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.reconnect-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.reconnect-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 28px;
+  background: var(--accent-blue);
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 140px;
+}
+
+.reconnect-btn:hover {
+  filter: brightness(1.1);
+  transform: scale(1.02);
+}
+
+.reconnect-btn:active {
+  transform: scale(0.98);
+}
+
+.reconnect-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.reconnect-btn.connecting {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.reconnect-subtext {
+  margin-top: 16px;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+/* ============================================================
+   Responsive - Mobile
+   ============================================================ */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 0 16px;
+  }
+
+  .main-content {
+    gap: 16px;
+    padding: 16px 0;
+  }
+
+  .status-bar {
+    height: 40px;
+    font-size: 0.7rem;
+  }
+
+  .status-bar-right .time-full {
+    display: none;
+  }
+
+  .hr-section {
+    padding: 4px 0;
+  }
+
+  .hr-icon {
+    width: 22px;
+    height: 22px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+
+  .hr-number {
+    font-size: clamp(3.5rem, 20vw, 5rem);
+  }
+
+  .hr-unit {
+    font-size: 0.9rem;
+    margin-left: 6px;
+    margin-bottom: 6px;
+  }
+
+  .hr-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+  }
+
+  .waveform-section {
+    min-height: 220px;
+  }
+
+  .waveform-canvas-wrap {
+    min-height: 220px;
+  }
+
+  .waveform-header {
+    padding: 10px 14px;
+  }
+
+  .waveform-title {
+    font-size: 0.75rem;
+  }
+
+  .waveform-info {
+    gap: 12px;
+    font-size: 0.65rem;
+  }
+
+  .metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .metric-card {
+    padding: 14px 16px;
+  }
+
+  .metric-card-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+  }
+
+  .metric-card-value {
+    font-size: 1.4rem;
+  }
+
+  .bottom-bar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 0;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .bottom-bar-left,
+  .bottom-bar-right {
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .bottom-bar-item {
+    font-size: 0.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .waveform-info .info-sample {
+    display: none;
+  }
+}
+
+/* ============================================================
+   Utility
+   ============================================================ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+</style>
+<style type="text/tailwindcss">
+@theme inline {
+  --color-background: var(--bg-deep);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--bg-card);
+  --color-card-foreground: var(--text-primary);
+  --color-primary: var(--accent-blue);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--bg-elevated);
+  --color-secondary-foreground: var(--text-primary);
+  --color-muted: var(--bg-card);
+  --color-muted-foreground: var(--text-secondary);
+  --color-accent: var(--accent-green);
+  --color-accent-foreground: #ffffff;
+  --color-destructive: var(--accent-red);
+  --color-destructive-foreground: #ffffff;
+  --color-success: var(--accent-green);
+  --color-warning: var(--accent-orange);
+  --color-border: var(--border-subtle);
+  --color-input: var(--border-subtle);
+  --color-ring: var(--accent-blue);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; tab-size: 4; }
+  body { margin: 0; line-height: 1.5; font-family: var(--font-sans); background: var(--bg-deep); color: var(--text-primary); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  h1, h2, h3, h4, h5, h6 { margin: 0; font-size: inherit; font-weight: inherit; }
+  p { margin: 0; }
+  table { border-collapse: collapse; width: 100%; }
+  button, input, select, textarea { font: inherit; }
+  button { cursor: pointer; }
+  img, svg { display: block; max-width: 100%; }
+}
+</style>
+<style id="semantic-token-fallback">
+/* Fallback for Tailwind semantic tokens — kept in sync with theme-vars */
+:root {
+  --color-background: #0a0a0c;
+  --color-foreground: #f5f5f7;
+  --color-card: rgba(28, 28, 32, 0.6);
+  --color-card-foreground: #f5f5f7;
+  --color-primary: #0A84FF;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: rgba(48, 209, 88, 0.12);
+  --color-secondary-foreground: #f5f5f7;
+  --color-muted: rgba(28, 28, 32, 0.4);
+  --color-muted-foreground: #8e8e93;
+  --color-accent: rgba(48, 209, 88, 0.15);
+  --color-accent-foreground: #f5f5f7;
+  --color-destructive: #FF453A;
+  --color-destructive-foreground: #ffffff;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-input: rgba(255, 255, 255, 0.08);
+  --color-ring: #0A84FF;
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.5rem;
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ============================================================
+       Top Status Bar
+       ============================================================ -->
+  <header class="status-bar">
+    <div class="status-bar-left">
+      <span class="device-name">ECG Monitor</span>
+      <div class="status-indicator">
+        <span class="status-indicator-dot connecting" id="statusDot"></span>
+        <span class="status-indicator-text" id="statusText">连接中</span>
+      </div>
+    </div>
+    <div class="status-bar-right">
+      <span id="currentTime">--:--:--</span>
+      <span class="time-full" id="currentDate">----/--/--</span>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       Main Content
+       ============================================================ -->
+  <main class="main-content" role="main">
+
+    <!-- Heart Rate Display -->
+    <section class="hr-section" aria-label="心率显示">
+      <div class="hr-display">
+        <svg class="hr-icon" id="hrIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"></path>
+        </svg>
+        <span class="hr-number" id="hrValue">--</span>
+        <span class="hr-unit">BPM</span>
+      </div>
+      <div class="hr-label">心率</div>
+      <div class="hr-status" id="hrStatus">等待信号...</div>
+    </section>
+
+    <!-- Waveform Display -->
+    <section class="waveform-section" aria-label="心电图波形">
+      <div class="waveform-card">
+        <div class="waveform-header">
+          <div class="waveform-title">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12h2l2-5 2 10 2-8 2 6h2l2-5 2 5h4"></path>
+            </svg>
+            <span>ECG Lead II</span>
+          </div>
+          <div class="waveform-info">
+            <div class="waveform-info-item">
+              <span class="waveform-info-label">采样率</span>
+              <span class="waveform-info-value" id="sampleRate">500 Hz</span>
+            </div>
+            <div class="waveform-info-item info-sample">
+              <span class="waveform-info-label">速度</span>
+              <span class="waveform-info-value">25 mm/s</span>
+            </div>
+          </div>
+        </div>
+        <div class="waveform-canvas-wrap">
+          <canvas id="ecgCanvas"></canvas>
+          <div class="waveform-lead-label">Lead II</div>
+          <div class="waveform-scale-label">10 mm/mV</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Metrics Cards -->
+    <section class="metrics-row" aria-label="HRV指标">
+      <div class="metric-card">
+        <div class="metric-card-label">SDNN</div>
+        <div class="metric-card-value accent" id="sdnnValue">--<span class="metric-card-unit">ms</span></div>
+        <div class="metric-card-desc">窦性心律标准差</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-card-label">RMSSD</div>
+        <div class="metric-card-value accent" id="rmssdValue">--<span class="metric-card-unit">ms</span></div>
+        <div class="metric-card-desc">连续差均方根</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-card-label">信号质量</div>
+        <div class="metric-card-value" id="qualityValue" style="font-size: 1.2rem;">--</div>
+        <div class="metric-card-status">
+          <span class="metric-card-status-dot neutral" id="qualityDot"></span>
+          <span class="metric-card-status-text" id="qualityText">等待信号</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-card-label">报警状态</div>
+        <div class="metric-card-value" id="alarmValue" style="font-size: 1.2rem;">--</div>
+        <div class="metric-card-status">
+          <span class="metric-card-status-dot neutral" id="alarmDot"></span>
+          <span class="metric-card-status-text" id="alarmText">--</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       Bottom Info Bar
+       ============================================================ -->
+  <footer class="bottom-bar">
+    <div class="bottom-bar-left">
+      <div class="bottom-bar-item">
+        <span class="bottom-bar-label">串口</span>
+        <span class="bottom-bar-value" id="statPort">--</span>
+      </div>
+      <div class="bottom-bar-item">
+        <span class="bottom-bar-label">波特率</span>
+        <span class="bottom-bar-value" id="statBaud">--</span>
+      </div>
+      <div class="bottom-bar-item">
+        <span class="bottom-bar-label">帧</span>
+        <span class="bottom-bar-value" id="statFrames">0</span>
+      </div>
+    </div>
+    <div class="bottom-bar-right">
+      <div class="bottom-bar-item">
+        <span class="bottom-bar-label">FPS</span>
+        <span class="bottom-bar-value" id="statFps">--</span>
+      </div>
+      <div class="bottom-bar-item" id="demoBadgeWrap" style="display:none;">
+        <span class="demo-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>演示模式</span>
+        </span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<!-- ============================================================
+     Reconnect Overlay
+     ============================================================ -->
+<div class="reconnect-overlay" id="reconnectOverlay" role="dialog" aria-modal="true" aria-labelledby="reconnectTitle" style="left: -102.95235285234342px; top: 1154.0844115645273px; right: auto; bottom: auto;">
+  <div class="reconnect-modal">
+    <div class="reconnect-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+        <path d="M12 9v4"></path>
+        <path d="M12 17h.01"></path>
+      </svg>
+    </div>
+    <h2 class="reconnect-title" id="reconnectTitle">连接已断开</h2>
+    <p class="reconnect-desc">无法连接到心电设备服务器。请检查设备连接，或使用模拟数据进行演示。</p>
+    <button class="reconnect-btn" id="reconnectBtn" onclick="ECGApp.reconnect()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+        <path d="M21 3v5h-5"></path>
+      </svg>
+      <span id="reconnectBtnText">重新连接</span>
+    </button>
+    <div class="reconnect-subtext">已自动切换至演示模式</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     JavaScript
+     ============================================================ -->
+<script>
+/* ============================================================
+   ECG Monitor - Medical Monitor Style
+   ============================================================ */
+const ECGApp = (function() {
+  'use strict';
+
+  // --- State ---
+  let ws = null;
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 3;
+  let reconnectTimer = null;
+  let isSimulating = false;
+  let simulationTimer = null;
+
+  // Canvas state
+  let canvas = null;
+  let ctx = null;
+  let canvasWidth = 0;
+  let canvasHeight = 0;
+  let dpr = 1;
+
+  // Scan-line buffer
+  // Each pixel column stores the waveform y-value and r-mark flag
+  let scanBuffer = null;    // Float32Array of y-values per x pixel
+  let scanRBuffer = null;   // Uint8Array of r-mark flags per x pixel
+  let scanX = 0;            // Current scan position in pixels
+  let lastFrameTime = 0;
+  let fpsCounter = 0;
+  let fpsLastTime = 0;
+  let currentFps = 0;
+
+  // Sample buffer for incoming data
+  const sampleBufferSize = 2000;
+  let sampleBuffer = new Float32Array(sampleBufferSize);
+  let sampleRBuffer = new Uint8Array(sampleBufferSize);
+  let sampleWriteIdx = 0;
+  let sampleReadIdx = 0;
+
+  // Waveform scaling
+  let waveMin = 1800;
+  let waveMax = 2300;
+  let waveAutoScale = true;
+
+  // Smooth value interpolation
+  let displayedHR = 0;
+  let targetHR = 0;
+  let displayedSDNN = 0;
+  let targetSDNN = 0;
+  let displayedRMSSD = 0;
+  let targetRMSSD = 0;
+
+  // Stats
+  let stats = {
+    frames_ok: 0,
+    frames_crc_error: 0,
+    frames_payload_error: 0,
+    frames_unsynced: 0,
+    frame_seq: 0,
+    last_frame_age: 0
+  };
+
+  let currentPort = '';
+  let currentBaudrate = 0;
+  let currentSampleRate = 500;
+  let currentSampleIndex = 0;
+  let currentAlarm = 0;
+  let currentQuality = 0;
+  let isConnected = false;
+
+  // Scan speed: pixels per second (25mm/s standard -> based on grid)
+  const scanSpeed = 125; // pixels per second (adjusted for visual)
+
+  // --- DOM Elements ---
+  const el = {};
+
+  // ============================================================
+  //  Initialization
+  // ============================================================
+  function init() {
+    cacheElements();
+    setupCanvas();
+    setupResizeHandler();
+    updateClock();
+    setInterval(updateClock, 1000);
+    startRenderLoop();
+    connectWebSocket();
+  }
+
+  function cacheElements() {
+    el.statusDot = document.getElementById('statusDot');
+    el.statusText = document.getElementById('statusText');
+    el.hrValue = document.getElementById('hrValue');
+    el.hrIcon = document.getElementById('hrIcon');
+    el.hrStatus = document.getElementById('hrStatus');
+    el.sdnnValue = document.getElementById('sdnnValue');
+    el.rmssdValue = document.getElementById('rmssdValue');
+    el.qualityValue = document.getElementById('qualityValue');
+    el.qualityDot = document.getElementById('qualityDot');
+    el.qualityText = document.getElementById('qualityText');
+    el.alarmValue = document.getElementById('alarmValue');
+    el.alarmDot = document.getElementById('alarmDot');
+    el.alarmText = document.getElementById('alarmText');
+    el.sampleRate = document.getElementById('sampleRate');
+    el.statPort = document.getElementById('statPort');
+    el.statBaud = document.getElementById('statBaud');
+    el.statFrames = document.getElementById('statFrames');
+    el.statFps = document.getElementById('statFps');
+    el.reconnectOverlay = document.getElementById('reconnectOverlay');
+    el.reconnectBtn = document.getElementById('reconnectBtn');
+    el.reconnectBtnText = document.getElementById('reconnectBtnText');
+    el.demoBadgeWrap = document.getElementById('demoBadgeWrap');
+    el.currentTime = document.getElementById('currentTime');
+    el.currentDate = document.getElementById('currentDate');
+  }
+
+  function updateClock() {
+    const now = new Date();
+    el.currentTime.textContent = now.toLocaleTimeString('zh-CN', { hour12: false });
+    el.currentDate.textContent = now.toLocaleDateString('zh-CN');
+  }
+
+  // ============================================================
+  //  Canvas Setup
+  // ============================================================
+  function setupCanvas() {
+    canvas = document.getElementById('ecgCanvas');
+    ctx = canvas.getContext('2d');
+    resizeCanvas();
+  }
+
+  function resizeCanvas() {
+    if (!canvas) return;
+    const wrapper = canvas.parentElement;
+    dpr = window.devicePixelRatio || 1;
+    canvasWidth = wrapper.clientWidth;
+    canvasHeight = wrapper.clientHeight;
+    canvas.width = Math.max(1, Math.floor(canvasWidth * dpr));
+    canvas.height = Math.max(1, Math.floor(canvasHeight * dpr));
+    canvas.style.width = canvasWidth + 'px';
+    canvas.style.height = canvasHeight + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Reinitialize scan buffer to match canvas width
+    const w = Math.floor(canvasWidth);
+    scanBuffer = new Float32Array(w);
+    scanRBuffer = new Uint8Array(w);
+
+    // Initialize with baseline (center)
+    const centerY = canvasHeight * 0.5;
+    for (let i = 0; i < w; i++) {
+      scanBuffer[i] = centerY;
+    }
+
+    // Reset scan position
+    scanX = 0;
+  }
+
+  function setupResizeHandler() {
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(resizeCanvas, 100);
+    });
+  }
+
+  // ============================================================
+  //  WebSocket Connection
+  // ============================================================
+  function connectWebSocket() {
+    updateConnectionStatus('connecting');
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch (e) {
+      handleConnectionError();
+      return;
+    }
+
+    ws.onopen = function() {
+      isConnected = true;
+      isSimulating = false;
+      reconnectAttempts = 0;
+      hideReconnectOverlay();
+      el.demoBadgeWrap.style.display = 'none';
+      updateConnectionStatus('connected');
+      ws.send(JSON.stringify({ type: 'subscribe' }));
+    };
+
+    ws.onmessage = function(event) {
+      try {
+        const data = JSON.parse(event.data);
+        handleDataFrame(data);
+      } catch (e) {
+        console.error('Failed to parse WebSocket message:', e);
+      }
+    };
+
+    ws.onerror = function() {
+      // Will be followed by onclose
+    };
+
+    ws.onclose = function() {
+      isConnected = false;
+      updateConnectionStatus('disconnected');
+      ws = null;
+
+      if (reconnectAttempts < maxReconnectAttempts) {
+        reconnectAttempts++;
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 4000);
+        reconnectTimer = setTimeout(connectWebSocket, delay);
+      } else {
+        startSimulation();
+        showReconnectOverlay();
+      }
+    };
+  }
+
+  function handleConnectionError() {
+    isConnected = false;
+    updateConnectionStatus('disconnected');
+    startSimulation();
+    showReconnectOverlay();
+  }
+
+  function reconnect() {
+    if (simulationTimer) {
+      clearInterval(simulationTimer);
+      simulationTimer = null;
+    }
+    isSimulating = false;
+    el.demoBadgeWrap.style.display = 'none';
+
+    reconnectAttempts = 0;
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    if (ws) {
+      try { ws.close(); } catch (e) {}
+      ws = null;
+    }
+
+    el.reconnectBtn.classList.add('connecting');
+    el.reconnectBtnText.textContent = '连接中...';
+    hideReconnectOverlay();
+
+    setTimeout(() => {
+      connectWebSocket();
+    }, 500);
+  }
+
+  function updateConnectionStatus(status) {
+    const dot = el.statusDot;
+    const text = el.statusText;
+
+    dot.className = 'status-indicator-dot ' + status;
+
+    switch (status) {
+      case 'connected':
+        text.textContent = isSimulating ? '演示模式' : '已连接';
+        break;
+      case 'connecting':
+        text.textContent = '连接中';
+        break;
+      case 'disconnected':
+        text.textContent = '未连接';
+        break;
+    }
+  }
+
+  function showReconnectOverlay() {
+    el.reconnectOverlay.classList.add('visible');
+    el.reconnectBtn.classList.remove('connecting');
+    el.reconnectBtnText.textContent = '重新连接';
+  }
+
+  function hideReconnectOverlay() {
+    el.reconnectOverlay.classList.remove('visible');
+  }
+
+  // ============================================================
+  //  ECG Simulation (Realistic PQRST waveform)
+  // ============================================================
+  let simPhase = 0;
+  let simHR = 72;
+  let simHRTarget = 72;
+  let simBeatCounter = 0;
+  let simFrameSeq = 0;
+  let simSampleIndex = 0;
+  let simSDNN = 45;
+  let simRMSSD = 38;
+
+  function generateECGHeartbeat(phase) {
+    // phase: 0 to 1 (one complete heartbeat cycle)
+    // Returns amplitude roughly -1 to 1
+
+    // P wave
+    const pStart = 0.0, pEnd = 0.12;
+    if (phase >= pStart && phase <= pEnd) {
+      const t = (phase - pStart) / (pEnd - pStart);
+      return 0.12 * Math.sin(t * Math.PI);
+    }
+
+    // PR segment
+    const prEnd = 0.22;
+    if (phase > pEnd && phase <= prEnd) {
+      const t = (phase - pEnd) / (prEnd - pEnd);
+      return 0.12 * (1 - t) + 0.02 * t;
+    }
+
+    // Q wave
+    const qStart = 0.22, qEnd = 0.27;
+    if (phase > qStart && phase <= qEnd) {
+      const t = (phase - qStart) / (qEnd - qStart);
+      return -0.15 * Math.sin(t * Math.PI);
+    }
+
+    // R wave (sharp main peak)
+    const rStart = 0.27, rEnd = 0.33;
+    if (phase > rStart && phase <= rEnd) {
+      const t = (phase - rStart) / (rEnd - rStart);
+      // Sharp rise and fall
+      if (t < 0.4) {
+        return -0.15 + (1.15) * (t / 0.4);
+      } else {
+        return 1.0 * (1 - (t - 0.4) / 0.6) - 0.1 * (t - 0.4) / 0.6;
+      }
+    }
+
+    // S wave
+    const sStart = 0.33, sEnd = 0.37;
+    if (phase > sStart && phase <= sEnd) {
+      const t = (phase - sStart) / (sEnd - sStart);
+      return -0.1 - 0.18 * Math.sin(t * Math.PI);
+    }
+
+    // ST segment
+    const stEnd = 0.5;
+    if (phase > sEnd && phase <= stEnd) {
+      const t = (phase - sEnd) / (stEnd - sEnd);
+      return -0.28 * (1 - t) + 0.05 * t;
+    }
+
+    // T wave
+    const tStart = 0.5, tEnd = 0.72;
+    if (phase > tStart && phase <= tEnd) {
+      const t = (phase - tStart) / (tEnd - tStart);
+      return 0.05 + 0.28 * Math.sin(t * Math.PI);
+    }
+
+    // TP interval (baseline recovery)
+    if (phase > tEnd) {
+      const t = (phase - tEnd) / (1 - tEnd);
+      return 0.05 * (1 - t) + 0.0 * t;
+    }
+
+    return 0;
+  }
+
+  function startSimulation() {
+    if (isSimulating) return;
+    isSimulating = true;
+    el.demoBadgeWrap.style.display = 'flex';
+    updateConnectionStatus('connected');
+
+    simFrameSeq = 0;
+    simSampleIndex = 0;
+    simPhase = 0;
+    simHR = 72;
+    simHRTarget = 75;
+
+    // Generate frames at ~20fps (50ms per frame) for smoothness
+    simulationTimer = setInterval(() => {
+      generateSimulationFrame();
+    }, 50);
+  }
+
+  function generateSimulationFrame() {
+    const samplesPerFrame = 25; // 25 samples per 50ms = 500Hz
+    const filtered = [];
+    const rMarks = [];
+
+    // Slowly vary heart rate
+    if (simBeatCounter % 20 === 0) {
+      simHRTarget = 65 + Math.random() * 30; // 65-95 BPM
+    }
+    simHR += (simHRTarget - simHR) * 0.015;
+
+    const samplesPerBeat = currentSampleRate / (simHR / 60);
+
+    for (let i = 0; i < samplesPerFrame; i++) {
+      const phase = (simPhase % samplesPerBeat) / samplesPerBeat;
+      let ecgValue = generateECGHeartbeat(phase);
+
+      // Baseline wander (very slow)
+      ecgValue += 0.03 * Math.sin(simPhase / 300);
+
+      // Very subtle noise
+      ecgValue += (Math.random() - 0.5) * 0.02;
+
+      // Scale to 12-bit ADC range (centered at 2048)
+      const scaled = Math.round(2048 + ecgValue * 480);
+      filtered.push(scaled);
+
+      // R wave detection at the peak
+      const beatPos = simPhase % samplesPerBeat;
+      const rPeakPos = 0.3 * samplesPerBeat;
+      const isRWave = Math.abs(beatPos - rPeakPos) < 1.0;
+      rMarks.push(isRWave ? 1 : 0);
+
+      simPhase++;
+      if (isRWave) simBeatCounter++;
+    }
+
+    simSampleIndex += samplesPerFrame;
+    simFrameSeq++;
+
+    // Vary HRV values
+    simSDNN = 42 + Math.sin(simFrameSeq * 0.015) * 7 + Math.random() * 2;
+    simRMSSD = 35 + Math.cos(simFrameSeq * 0.02) * 5 + Math.random() * 2;
+
+    const frame = {
+      connected: true,
+      port: 'SIM',
+      baudrate: 115200,
+      sample_rate: 500,
+      sample_index: simSampleIndex,
+      frame_seq: simFrameSeq,
+      last_frame_age: Math.round(40 + Math.random() * 20),
+      statistics: {
+        frames_ok: simFrameSeq,
+        frames_crc_error: 0,
+        frames_payload_error: 0,
+        frames_unsynced: 0
+      },
+      metrics: {
+        hr_bpm: Math.round(simHR * 10) / 10,
+        sd_rr_ms: Math.round(simSDNN * 10) / 10,
+        rmssd_rr_ms: Math.round(simRMSSD * 10) / 10,
+        alarm: 2,
+        quality: 0
+      },
+      samples: {
+        filtered: filtered,
+        r_marks: rMarks
+      }
+    };
+
+    handleDataFrame(frame);
+  }
+
+  // ============================================================
+  //  Data Handling
+  // ============================================================
+  function handleDataFrame(data) {
+    // Update connection info
+    if (data.port !== undefined) currentPort = data.port;
+    if (data.baudrate !== undefined) currentBaudrate = data.baudrate;
+    if (data.sample_rate !== undefined) currentSampleRate = data.sample_rate;
+    if (data.sample_index !== undefined) currentSampleIndex = data.sample_index;
+
+    // Update stats
+    if (data.statistics) {
+      stats.frames_ok = data.statistics.frames_ok || 0;
+      stats.frames_crc_error = data.statistics.frames_crc_error || 0;
+      stats.frames_payload_error = data.statistics.frames_payload_error || 0;
+      stats.frames_unsynced = data.statistics.frames_unsynced || 0;
+    }
+    if (data.frame_seq !== undefined) stats.frame_seq = data.frame_seq;
+    if (data.last_frame_age !== undefined) stats.last_frame_age = data.last_frame_age;
+
+    // Update metrics
+    if (data.metrics) {
+      targetHR = data.metrics.hr_bpm || 0;
+      targetSDNN = data.metrics.sd_rr_ms || 0;
+      targetRMSSD = data.metrics.rmssd_rr_ms || 0;
+      currentAlarm = data.metrics.alarm !== undefined ? data.metrics.alarm : 0;
+      currentQuality = data.metrics.quality !== undefined ? data.metrics.quality : 0;
+    }
+
+    // Push samples into sample buffer
+    if (data.samples && data.samples.filtered) {
+      const filtered = data.samples.filtered;
+      const rMarks = data.samples.r_marks || [];
+
+      for (let i = 0; i < filtered.length; i++) {
+        sampleBuffer[sampleWriteIdx] = filtered[i];
+        sampleRBuffer[sampleWriteIdx] = rMarks[i] || 0;
+        sampleWriteIdx = (sampleWriteIdx + 1) % sampleBufferSize;
+      }
+    }
+  }
+
+  // ============================================================
+  //  Render Loop
+  // ============================================================
+  function startRenderLoop() {
+    let lastStatsUpdate = 0;
+    let lastUIUpdate = 0;
+
+    function render(timestamp) {
+      // FPS counter
+      fpsCounter++;
+      if (timestamp - fpsLastTime >= 1000) {
+        currentFps = fpsCounter;
+        fpsCounter = 0;
+        fpsLastTime = timestamp;
+      }
+
+      // Smooth value interpolation
+      interpolateValues();
+
+      // Advance scan line and consume samples
+      advanceScan(timestamp);
+
+      // Draw waveform
+      drawWaveform(timestamp);
+
+      // Update UI at ~10fps for stats
+      if (timestamp - lastStatsUpdate > 100) {
+        updateStatsUI();
+        lastStatsUpdate = timestamp;
+      }
+
+      // Update main metrics at ~20fps
+      if (timestamp - lastUIUpdate > 50) {
+        updateMetricsUI();
+        lastUIUpdate = timestamp;
+      }
+
+      lastFrameTime = timestamp;
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+  }
+
+  function interpolateValues() {
+    const lerp = (a, b, t) => a + (b - a) * t;
+    displayedHR = lerp(displayedHR, targetHR, 0.12);
+    displayedSDNN = lerp(displayedSDNN, targetSDNN, 0.08);
+    displayedRMSSD = lerp(displayedRMSSD, targetRMSSD, 0.08);
+  }
+
+  // ============================================================
+  //  Scan Line Logic
+  // ============================================================
+  function advanceScan(timestamp) {
+    if (!scanBuffer || canvasWidth === 0) return;
+
+    const dt = lastFrameTime === 0 ? 16 : (timestamp - lastFrameTime);
+    const dx = (scanSpeed * dt) / 1000; // pixels to advance
+
+    // Calculate how many samples we need to consume
+    // Samples per pixel = sampleRate / scanSpeed
+    const samplesPerPixel = currentSampleRate / scanSpeed;
+
+    const startX = scanX;
+    const endX = scanX + dx;
+
+    // For each pixel column between start and end
+    for (let px = Math.floor(startX); px < Math.floor(endX); px++) {
+      const x = px % canvasWidth;
+
+      // Consume samples for this pixel position
+      // We average a block of samples per pixel
+      const samplesToConsume = Math.floor(samplesPerPixel);
+      if (samplesToConsume < 1) {
+        // If fewer than 1 sample per pixel, just take one sample every few pixels
+        if ((px % Math.ceil(1 / samplesPerPixel)) === 0) {
+          consumeOneSample(x);
+        }
+      } else {
+        consumeSampleBlock(x, samplesToConsume);
+      }
+    }
+
+    scanX = endX % canvasWidth;
+  }
+
+  function consumeOneSample(x) {
+    if (sampleWriteIdx === sampleReadIdx) return; // no data
+
+    const val = sampleBuffer[sampleReadIdx];
+    const rMark = sampleRBuffer[sampleReadIdx];
+    sampleReadIdx = (sampleReadIdx + 1) % sampleBufferSize;
+
+    scanBuffer[x] = val;
+    scanRBuffer[x] = rMark;
+  }
+
+  function consumeSampleBlock(x, count) {
+    let sum = 0;
+    let hasR = 0;
+    let consumed = 0;
+
+    for (let i = 0; i < count; i++) {
+      if (sampleWriteIdx === sampleReadIdx) break;
+      sum += sampleBuffer[sampleReadIdx];
+      if (sampleRBuffer[sampleReadIdx] === 1) hasR = 1;
+      sampleReadIdx = (sampleReadIdx + 1) % sampleBufferSize;
+      consumed++;
+    }
+
+    if (consumed > 0) {
+      scanBuffer[x] = sum / consumed;
+      scanRBuffer[x] = hasR;
+    }
+  }
+
+  // ============================================================
+  //  Waveform Drawing (Scan-line / Monitor Style)
+  // ============================================================
+  function drawWaveform(timestamp) {
+    if (!ctx || canvasWidth === 0 || canvasHeight === 0) return;
+
+    const w = canvasWidth;
+    const h = canvasHeight;
+
+    // Clear with deep background
+    ctx.clearRect(0, 0, w, h);
+
+    // Draw background grid
+    drawGrid(w, h);
+
+    // Draw the waveform with fade effect
+    drawScanWaveform(w, h);
+
+    // Draw scan head (bright vertical line)
+    drawScanHead(w, h);
+
+    // Draw R-wave markers
+    drawRMarks(w, h);
+  }
+
+  function drawGrid(w, h) {
+    ctx.save();
+
+    // Standard ECG grid:
+    // Major grid: 5mm spacing -> 0.2s horizontal, 0.5mV vertical
+    // Minor grid: 1mm spacing
+    // At 25mm/s paper speed and 10mm/mV gain
+
+    // Calculate grid spacing in pixels
+    // We want scanSpeed px/s = 25mm/s, so 1mm = scanSpeed/25 px
+    const mmPerPx = 25 / scanSpeed;
+    const majorSpacingX = 5 * scanSpeed / 25; // 5mm = 0.2s
+    const minorSpacingX = majorSpacingX / 5;   // 1mm = 0.04s
+    const majorSpacingY = 40; // ~5mm visually for 0.5mV
+    const minorSpacingY = majorSpacingY / 5;
+
+    // Minor grid (very faint)
+    ctx.strokeStyle = 'rgba(48, 209, 88, 0.03)';
+    ctx.lineWidth = 0.5;
+
+    ctx.beginPath();
+    for (let x = 0; x <= w; x += minorSpacingX) {
+      ctx.moveTo(Math.round(x) + 0.5, 0);
+      ctx.lineTo(Math.round(x) + 0.5, h);
+    }
+    for (let y = 0; y <= h; y += minorSpacingY) {
+      ctx.moveTo(0, Math.round(y) + 0.5);
+      ctx.lineTo(w, Math.round(y) + 0.5);
+    }
+    ctx.stroke();
+
+    // Major grid (slightly more visible)
+    ctx.strokeStyle = 'rgba(48, 209, 88, 0.06)';
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    for (let x = 0; x <= w; x += majorSpacingX) {
+      ctx.moveTo(Math.round(x) + 0.5, 0);
+      ctx.lineTo(Math.round(x) + 0.5, h);
+    }
+    for (let y = 0; y <= h; y += majorSpacingY) {
+      ctx.moveTo(0, Math.round(y) + 0.5);
+      ctx.lineTo(w, Math.round(y) + 0.5);
+    }
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawScanWaveform(w, h) {
+    if (!scanBuffer) return;
+
+    const centerY = h * 0.5;
+
+    // Auto-scale tracking
+    let localMin = Infinity, localMax = -Infinity;
+    for (let i = 0; i < w; i++) {
+      const v = scanBuffer[i];
+      if (v < localMin) localMin = v;
+      if (v > localMax) localMax = v;
+    }
+    const range = localMax - localMin || 1;
+    const padding = range * 0.25;
+    const minVal = localMin - padding;
+    const maxVal = localMax + padding;
+    const valRange = maxVal - minVal || 1;
+
+    const scaleY = (val) => centerY - ((val - minVal) / valRange - 0.5) * (h * 0.75);
+
+    const scanPos = Math.floor(scanX);
+    const eraseWidth = Math.max(12, w * 0.03);    // 扫描头前方擦除区宽度
+    const fadeRatio = 0.22;                        // 最旧数据的渐暗比例（屏幕的 22%）
+
+    // 计算"年龄"：从扫描头逆时针方向的距离
+    // age = 0 是最新（扫描头位置），age = w 是最旧（扫描头前一个像素）
+    function getAge(x) {
+      if (x <= scanPos) return scanPos - x;
+      return scanPos + (w - x);
+    }
+
+    // 亮度分布：长余晖效果
+    // - 大部分区域（0 ~ (1-fadeRatio)*w）：高亮，95%~100% 亮度
+    // - 最旧区域（(1-fadeRatio)*w ~ w）：快速从 95% 降到 18%
+    // - 扫描头前方擦除区：额外变暗到 ~10%
+    function getAlpha(x) {
+      const age = getAge(x);
+      const fadeStart = w * (1 - fadeRatio);
+
+      let alpha;
+      if (age < fadeStart) {
+        // 年轻数据：几乎全亮，只有极轻微的衰减
+        const t = age / fadeStart;
+        alpha = 1.0 - 0.05 * t; // 1.0 → 0.95
+      } else {
+        // 最旧数据：快速变暗
+        const t = (age - fadeStart) / (w - fadeStart);
+        // 使用 ease-in 曲线，让变暗更集中在最末端
+        alpha = 0.95 - 0.77 * (t * t * t); // 0.95 → 0.18
+      }
+
+      // 扫描头前方擦除区：覆盖掉即将写入的位置
+      const distAhead = x - scanPos;
+      if (x > scanPos && distAhead < eraseWidth) {
+        const t = distAhead / eraseWidth;
+        alpha = Math.min(alpha, 0.08 + 0.12 * t); // 0.08 → 0.20
+      }
+
+      return alpha;
+    }
+
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    // 分段绘制波形，每段使用不同的 alpha
+    // 为了性能，按 alpha 相近的像素分组绘制
+    const segmentSize = 3; // 每 3px 一段
+    ctx.lineWidth = 2;
+
+    for (let startX = 0; startX < w; startX += segmentSize) {
+      const endX = Math.min(startX + segmentSize, w);
+      const midX = Math.floor((startX + endX) / 2);
+      const alpha = getAlpha(midX);
+
+      // 基础波形
+      ctx.strokeStyle = `rgba(48, 209, 88, ${alpha})`;
+      ctx.shadowColor = 'rgba(48, 209, 88, 0)';
+      ctx.shadowBlur = 0;
+
+      ctx.beginPath();
+      let firstPt = true;
+      for (let x = startX; x < endX; x++) {
+        const y = scaleY(scanBuffer[x]);
+        if (firstPt) {
+          ctx.moveTo(x, y);
+          firstPt = false;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      // 连接到下一段的起点（避免间隙）
+      if (endX < w) {
+        ctx.lineTo(endX, scaleY(scanBuffer[endX]));
+      }
+      ctx.stroke();
+    }
+
+    // 扫描头附近的辉光层（仅在最亮的尾迹部分）
+    const glowRange = 50;
+    ctx.shadowColor = 'rgba(48, 209, 88, 0.7)';
+    ctx.shadowBlur = 10;
+    ctx.lineWidth = 2.5;
+
+    for (let startX = Math.max(0, scanPos - glowRange); startX <= scanPos && startX < w; startX += segmentSize) {
+      const endX = Math.min(startX + segmentSize, scanPos + 1);
+      const midX = Math.floor((startX + endX) / 2);
+      const dist = scanPos - midX;
+      if (dist < 0 || dist > glowRange) continue;
+      const t = dist / glowRange;
+      const alpha = (1.0 - t * t) * 0.9;
+
+      ctx.strokeStyle = `rgba(48, 209, 88, ${alpha})`;
+      ctx.beginPath();
+      let firstPt = true;
+      for (let x = startX; x < endX && x <= scanPos; x++) {
+        const y = scaleY(scanBuffer[x]);
+        if (firstPt) {
+          ctx.moveTo(x, y);
+          firstPt = false;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  function drawScanHead(w, h) {
+    if (!scanBuffer) return;
+
+    const x = Math.floor(scanX);
+    if (x < 0 || x >= w) return;
+
+    ctx.save();
+
+    // Scan head: bright vertical line with gradient
+    const gradient = ctx.createLinearGradient(x - 1.5, 0, x + 1.5, 0);
+    gradient.addColorStop(0, 'rgba(48, 209, 88, 0)');
+    gradient.addColorStop(0.5, 'rgba(48, 209, 88, 0.9)');
+    gradient.addColorStop(1, 'rgba(48, 209, 88, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - 2, 0, 4, h);
+
+    // Soft glow around scan head
+    const glowGradient = ctx.createRadialGradient(x, h / 2, 0, x, h / 2, 30);
+    glowGradient.addColorStop(0, 'rgba(48, 209, 88, 0.15)');
+    glowGradient.addColorStop(1, 'rgba(48, 209, 88, 0)');
+    ctx.fillStyle = glowGradient;
+    ctx.fillRect(x - 30, 0, 60, h);
+
+    // Bright dot at the waveform tip
+    const centerY = h * 0.5;
+    let localMin = Infinity, localMax = -Infinity;
+    for (let i = 0; i < w; i++) {
+      const v = scanBuffer[i];
+      if (v < localMin) localMin = v;
+      if (v > localMax) localMax = v;
+    }
+    const range = localMax - localMin || 1;
+    const padding = range * 0.25;
+    const minVal = localMin - padding;
+    const maxVal = localMax + padding;
+    const valRange = maxVal - minVal || 1;
+
+    const tipY = centerY - ((scanBuffer[x] - minVal) / valRange - 0.5) * (h * 0.75);
+
+    // Glowing dot at scan tip
+    ctx.shadowColor = 'rgba(48, 209, 88, 0.9)';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#30D158';
+    ctx.beginPath();
+    ctx.arc(x, tipY, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawRMarks(w, h) {
+    if (!scanBuffer || !scanRBuffer) return;
+
+    const centerY = h * 0.5;
+
+    let localMin = Infinity, localMax = -Infinity;
+    for (let i = 0; i < w; i++) {
+      const v = scanBuffer[i];
+      if (v < localMin) localMin = v;
+      if (v > localMax) localMax = v;
+    }
+    const range = localMax - localMin || 1;
+    const padding = range * 0.25;
+    const minVal = localMin - padding;
+    const maxVal = localMax + padding;
+    const valRange = maxVal - minVal || 1;
+    const scaleY = (val) => centerY - ((val - minVal) / valRange - 0.5) * (h * 0.75);
+
+    const scanPos = Math.floor(scanX);
+    const eraseWidth = Math.max(12, w * 0.03);
+    const fadeRatio = 0.22;
+
+    function getAge(x) {
+      if (x <= scanPos) return scanPos - x;
+      return scanPos + (w - x);
+    }
+
+    function getMarkAlpha(x) {
+      const age = getAge(x);
+      const fadeStart = w * (1 - fadeRatio);
+
+      let alpha;
+      if (age < fadeStart) {
+        const t = age / fadeStart;
+        alpha = 1.0 - 0.05 * t;
+      } else {
+        const t = (age - fadeStart) / (w - fadeStart);
+        alpha = 0.95 - 0.77 * (t * t * t);
+      }
+
+      const distAhead = x - scanPos;
+      if (x > scanPos && distAhead < eraseWidth) {
+        const t = distAhead / eraseWidth;
+        alpha = Math.min(alpha, 0.08 + 0.12 * t);
+      }
+
+      return alpha;
+    }
+
+    ctx.save();
+
+    for (let x = 0; x < w; x++) {
+      if (scanRBuffer[x] === 1) {
+        const y = scaleY(scanBuffer[x]);
+        const alpha = getMarkAlpha(x);
+
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = 'rgba(255, 69, 58, 0.6)';
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = '#FF453A';
+        ctx.beginPath();
+        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    ctx.restore();
+  }
+
+  // ============================================================
+  //  UI Updates
+  // ============================================================
+  function updateMetricsUI() {
+    // Heart Rate
+    if (targetHR > 0) {
+      el.hrValue.textContent = Math.round(displayedHR);
+    } else {
+      el.hrValue.textContent = '--';
+    }
+
+    // HR color and status
+    const hrEl = el.hrValue;
+    const hrIconEl = el.hrIcon;
+
+    if (currentAlarm === 3) {
+      hrEl.className = 'hr-number abnormal';
+      hrIconEl.style.color = 'var(--accent-red)';
+      el.hrStatus.textContent = '心律异常';
+    } else if (currentAlarm === 1) {
+      hrEl.className = 'hr-number';
+      hrEl.style.color = 'var(--text-tertiary)';
+      hrIconEl.style.color = 'var(--text-tertiary)';
+      el.hrStatus.textContent = '信号无效';
+    } else if (currentAlarm === 0) {
+      hrEl.className = 'hr-number';
+      hrEl.style.color = 'var(--text-tertiary)';
+      hrIconEl.style.color = 'var(--text-tertiary)';
+      el.hrStatus.textContent = '信号积累中...';
+    } else {
+      hrEl.className = 'hr-number';
+      hrEl.style.color = ''; // use default green from CSS
+      hrIconEl.style.color = '';
+      el.hrStatus.textContent = '窦性心律 · 信号正常';
+    }
+
+    // Heartbeat icon animation speed sync with HR
+    if (targetHR > 0) {
+      const beatDuration = 60 / targetHR;
+      hrIconEl.style.animationDuration = beatDuration + 's';
+    }
+
+    // SDNN
+    if (targetSDNN > 0) {
+      el.sdnnValue.innerHTML = displayedSDNN.toFixed(1) + '<span class="metric-card-unit">ms</span>';
+    } else {
+      el.sdnnValue.innerHTML = '--<span class="metric-card-unit">ms</span>';
+    }
+
+    // RMSSD
+    if (targetRMSSD > 0) {
+      el.rmssdValue.innerHTML = displayedRMSSD.toFixed(1) + '<span class="metric-card-unit">ms</span>';
+    } else {
+      el.rmssdValue.innerHTML = '--<span class="metric-card-unit">ms</span>';
+    }
+
+    // Signal Quality
+    updateSignalQuality();
+
+    // Alarm State
+    updateAlarmState();
+  }
+
+  function updateSignalQuality() {
+    const bit0 = (currentQuality & 1) !== 0; // 脱落
+    const bit1 = (currentQuality & 2) !== 0; // 削顶
+    const bit2 = (currentQuality & 4) !== 0; // 伪迹
+    const bit3 = (currentQuality & 8) !== 0; // 学习中
+
+    const valEl = el.qualityValue;
+    const dotEl = el.qualityDot;
+    const textEl = el.qualityText;
+
+    if (bit0) {
+      valEl.textContent = '电极脱落';
+      valEl.className = 'metric-card-value danger';
+      dotEl.className = 'metric-card-status-dot error';
+      textEl.textContent = '请检查电极连接';
+    } else if (bit1) {
+      valEl.textContent = '信号削顶';
+      valEl.className = 'metric-card-value warning';
+      dotEl.className = 'metric-card-status-dot warning';
+      textEl.textContent = '幅值超出范围';
+    } else if (bit2) {
+      valEl.textContent = '存在伪迹';
+      valEl.className = 'metric-card-value warning';
+      dotEl.className = 'metric-card-status-dot warning';
+      textEl.textContent = '检测到运动干扰';
+    } else if (bit3) {
+      valEl.textContent = '学习中';
+      valEl.className = 'metric-card-value';
+      dotEl.className = 'metric-card-status-dot neutral';
+      textEl.textContent = '算法自适应中';
+    } else {
+      valEl.textContent = '良好';
+      valEl.className = 'metric-card-value accent';
+      dotEl.className = 'metric-card-status-dot ok';
+      textEl.textContent = '信号质量优秀';
+    }
+  }
+
+  function updateAlarmState() {
+    const valEl = el.alarmValue;
+    const dotEl = el.alarmDot;
+    const textEl = el.alarmText;
+
+    switch (currentAlarm) {
+      case 0:
+        valEl.textContent = '积累中';
+        valEl.className = 'metric-card-value';
+        dotEl.className = 'metric-card-status-dot neutral';
+        textEl.textContent = '数据采集中';
+        break;
+      case 1:
+        valEl.textContent = '无效';
+        valEl.className = 'metric-card-value danger';
+        dotEl.className = 'metric-card-status-dot error';
+        textEl.textContent = '信号不可用';
+        break;
+      case 2:
+        valEl.textContent = '正常';
+        valEl.className = 'metric-card-value accent';
+        dotEl.className = 'metric-card-status-dot ok';
+        textEl.textContent = '心律正常';
+        break;
+      case 3:
+        valEl.textContent = '异常';
+        valEl.className = 'metric-card-value danger';
+        dotEl.className = 'metric-card-status-dot error';
+        textEl.textContent = '检测到异常心律';
+        break;
+      default:
+        valEl.textContent = '--';
+        valEl.className = 'metric-card-value';
+        dotEl.className = 'metric-card-status-dot neutral';
+        textEl.textContent = '--';
+    }
+  }
+
+  function updateStatsUI() {
+    el.sampleRate.textContent = currentSampleRate + ' Hz';
+    el.statPort.textContent = currentPort || '--';
+    el.statBaud.textContent = currentBaudrate ? formatNumber(currentBaudrate) : '--';
+    el.statFrames.textContent = formatNumber(stats.frames_ok);
+    el.statFps.textContent = currentFps ? currentFps : '--';
+  }
+
+  function formatNumber(n) {
+    if (n === undefined || n === null) return '0';
+    return n.toLocaleString('zh-CN');
+  }
+
+  // ============================================================
+  //  Public API
+  // ============================================================
+  return {
+    init: init,
+    reconnect: reconnect
+  };
+
+})();
+
+// Start the application
+document.addEventListener('DOMContentLoaded', function() {
+  ECGApp.init();
+});
+</script>
+
+</body>
+</html>

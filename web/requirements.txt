@@ -1,0 +1,4 @@
+# ECG 上位机后端依赖
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pyserial>=3.5

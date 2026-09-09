@@ -44,7 +44,11 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user sources here
+    Src/ecg_preprocess.c
+    Src/qrs_detector.c
+    Src/sample_rate_estimator.c
+    Src/heart_rate.c
+    Src/hrv.c
 )
 
 # Add include paths

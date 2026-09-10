@@ -268,5 +268,10 @@ void ECGApp_Poll(void)
     if (monitor.heart_rate.result.valid) gap_notice = false;
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4,
         monitor.hrv.result.alarm_active && (now % 1000U < 200U) ? 250U : 0U);
+    /* PB14 is a plain GPIO: flash at 2 Hz while the HRV alarm is active.
+       The buzzer intentionally keeps its existing TIM1/PWM drive. */
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin,
+        monitor.hrv.result.alarm_active && (now % 500U < 250U)
+            ? GPIO_PIN_SET : GPIO_PIN_RESET);
     if (now - info_tick >= 500U) { info_tick = now; DrawInfo(); }
 }

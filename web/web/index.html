@@ -420,7 +420,7 @@ body::before {
    ============================================================ */
 .metrics-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 14px;
 }
 
@@ -973,19 +973,7 @@ body::before {
     </section>
 
     <!-- Metrics Cards -->
-    <section class="metrics-row" aria-label="HRV指标">
-      <div class="metric-card">
-        <div class="metric-card-label">SDNN</div>
-        <div class="metric-card-value accent" id="sdnnValue">--<span class="metric-card-unit">ms</span></div>
-        <div class="metric-card-desc">窦性心律标准差</div>
-      </div>
-
-      <div class="metric-card">
-        <div class="metric-card-label">RMSSD</div>
-        <div class="metric-card-value accent" id="rmssdValue">--<span class="metric-card-unit">ms</span></div>
-        <div class="metric-card-desc">连续差均方根</div>
-      </div>
-
+    <section class="metrics-row" aria-label="监测状态">
       <div class="metric-card">
         <div class="metric-card-label">信号质量</div>
         <div class="metric-card-value" id="qualityValue" style="font-size: 1.2rem;">--</div>
@@ -1123,10 +1111,7 @@ const ECGApp = (function() {
   // Smooth value interpolation
   let displayedHR = 0;
   let targetHR = 0;
-  let displayedSDNN = 0;
-  let targetSDNN = 0;
-  let displayedRMSSD = 0;
-  let targetRMSSD = 0;
+  let lastRSourceIndex = null;
 
   // Stats
   let stats = {
@@ -1171,8 +1156,6 @@ const ECGApp = (function() {
     el.hrValue = document.getElementById('hrValue');
     el.hrIcon = document.getElementById('hrIcon');
     el.hrStatus = document.getElementById('hrStatus');
-    el.sdnnValue = document.getElementById('sdnnValue');
-    el.rmssdValue = document.getElementById('rmssdValue');
     el.qualityValue = document.getElementById('qualityValue');
     el.qualityDot = document.getElementById('qualityDot');
     el.qualityText = document.getElementById('qualityText');
@@ -1369,8 +1352,6 @@ const ECGApp = (function() {
   let simBeatCounter = 0;
   let simFrameSeq = 0;
   let simSampleIndex = 0;
-  let simSDNN = 45;
-  let simRMSSD = 38;
 
   function generateECGHeartbeat(phase) {
     // phase: 0 to 1 (one complete heartbeat cycle)
@@ -1497,10 +1478,6 @@ const ECGApp = (function() {
     simSampleIndex += samplesPerFrame;
     simFrameSeq++;
 
-    // Vary HRV values
-    simSDNN = 42 + Math.sin(simFrameSeq * 0.015) * 7 + Math.random() * 2;
-    simRMSSD = 35 + Math.cos(simFrameSeq * 0.02) * 5 + Math.random() * 2;
-
     const frame = {
       connected: true,
       port: 'SIM',
@@ -1517,12 +1494,12 @@ const ECGApp = (function() {
       },
       metrics: {
         hr_bpm: Math.round(simHR * 10) / 10,
-        sd_rr_ms: Math.round(simSDNN * 10) / 10,
-        rmssd_rr_ms: Math.round(simRMSSD * 10) / 10,
         alarm: 2,
         quality: 0
       },
       samples: {
+        start_index: simSampleIndex - samplesPerFrame,
+        end_index: simSampleIndex - 1,
         filtered: filtered,
         r_marks: rMarks
       }
@@ -1547,8 +1524,7 @@ const ECGApp = (function() {
     lastQueuedStream = null;
     waveformHasData = false;
     displayedHR = targetHR = 0;
-    displayedSDNN = targetSDNN = 0;
-    displayedRMSSD = targetRMSSD = 0;
+    lastRSourceIndex = null;
     currentAlarm = 1;
     currentQuality = 4;
   }
@@ -1590,9 +1566,11 @@ const ECGApp = (function() {
 
     // Update metrics
     if (data.metrics) {
-      targetHR = data.metrics.hr_bpm || 0;
-      targetSDNN = data.metrics.sd_rr_ms || 0;
-      targetRMSSD = data.metrics.rmssd_rr_ms || 0;
+      // R-R timing below is the primary heart-rate source.  Keep the backend
+      // value only as a fallback until this page has observed two R peaks.
+      if (lastRSourceIndex === null && Number.isFinite(data.metrics.hr_bpm)) {
+        targetHR = data.metrics.hr_bpm;
+      }
       currentAlarm = data.metrics.alarm !== undefined ? data.metrics.alarm : 0;
       currentQuality = data.metrics.quality !== undefined ? data.metrics.quality : 0;
     }
@@ -1618,6 +1596,7 @@ const ECGApp = (function() {
           } else {
             // Acquisition gap / device restart: do not replay the old queue.
             sampleReadIdx = sampleWriteIdx = 0;
+            lastRSourceIndex = null;
             if (scanBuffer) scanBuffer.fill(0);
             if (scanRBuffer) scanRBuffer.fill(0);
             if (scanPointBuffer) scanPointBuffer.fill(0);
@@ -1626,6 +1605,8 @@ const ECGApp = (function() {
         if (hasStreamIndex) lastQueuedStream = end;
         else lastQueuedSample = end;
       }
+      const sourceStart = Number.isInteger(data.samples.start_index)
+        ? data.samples.start_index : start;
       for (let i = first; i < filtered.length; i++) {
         const next = (sampleWriteIdx + 1) % sampleBufferSize;
         // Reserve one slot to distinguish full from empty.
@@ -1633,10 +1614,30 @@ const ECGApp = (function() {
         sampleBuffer[sampleWriteIdx] = filtered[i];
         sampleRBuffer[sampleWriteIdx] = rMarks[i] || 0;
         samplePointBuffer[sampleWriteIdx] = pointMarks[i] || 0;
+        if ((pointMarks[i] === 1 || rMarks[i] === 1) && Number.isInteger(sourceStart)) {
+          updateHeartRateFromR((sourceStart + i) >>> 0);
+        }
         sampleWriteIdx = next;
         waveformHasData = true;
       }
     }
+  }
+
+  function updateHeartRateFromR(rIndex) {
+    if (lastRSourceIndex !== null && currentSampleRate > 0) {
+      const samples = (rIndex - lastRSourceIndex) >>> 0;
+      const rrMs = samples * 1000 / currentSampleRate;
+      const bpm = 60000 / rrMs;
+      if (bpm >= 30 && bpm <= 220) {
+        // One valid RR interval is sufficient; update immediately without
+        // waiting for an HRV window or the normal display interpolation.
+        targetHR = bpm;
+        displayedHR = bpm;
+      } else {
+        targetHR = displayedHR = 0;
+      }
+    }
+    lastRSourceIndex = rIndex;
   }
 
   // ============================================================
@@ -1686,8 +1687,6 @@ const ECGApp = (function() {
   function interpolateValues() {
     const lerp = (a, b, t) => a + (b - a) * t;
     displayedHR = lerp(displayedHR, targetHR, 0.12);
-    displayedSDNN = lerp(displayedSDNN, targetSDNN, 0.08);
-    displayedRMSSD = lerp(displayedRMSSD, targetRMSSD, 0.08);
   }
 
   // ============================================================
@@ -2136,20 +2135,6 @@ const ECGApp = (function() {
     if (targetHR > 0) {
       const beatDuration = 60 / targetHR;
       hrIconEl.style.animationDuration = beatDuration + 's';
-    }
-
-    // SDNN
-    if (targetSDNN > 0) {
-      el.sdnnValue.innerHTML = displayedSDNN.toFixed(1) + '<span class="metric-card-unit">ms</span>';
-    } else {
-      el.sdnnValue.innerHTML = '--<span class="metric-card-unit">ms</span>';
-    }
-
-    // RMSSD
-    if (targetRMSSD > 0) {
-      el.rmssdValue.innerHTML = displayedRMSSD.toFixed(1) + '<span class="metric-card-unit">ms</span>';
-    } else {
-      el.rmssdValue.innerHTML = '--<span class="metric-card-unit">ms</span>';
     }
 
     // Signal Quality

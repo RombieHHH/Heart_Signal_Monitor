@@ -7,6 +7,48 @@ import math
 import statistics
 
 
+class _Biquad:
+    """Direct-form-II biquad, matching the MCU implementation."""
+
+    def __init__(self, coefficients):
+        self.b0, self.b1, self.b2, self.a1, self.a2 = coefficients
+        self.s1 = 0.0
+        self.s2 = 0.0
+
+    def set_steady_state(self, input_value, output_value):
+        self.s1 = output_value - self.b0 * input_value
+        self.s2 = self.b2 * input_value - self.a2 * output_value
+
+    def push(self, value):
+        output = self.b0 * value + self.s1
+        self.s1 = self.b1 * value - self.a1 * output + self.s2
+        self.s2 = self.b2 * value - self.a2 * output
+        return output
+
+
+def _butterworth(cutoff, sample_rate, highpass=False):
+    omega = 2.0 * math.pi * cutoff / sample_rate
+    cosine, sine = math.cos(omega), math.sin(omega)
+    alpha = sine / math.sqrt(2.0)
+    scale = 1.0 / (1.0 + alpha)
+    if highpass:
+        b0 = (1.0 + cosine) * 0.5 * scale
+        b1 = -(1.0 + cosine) * scale
+    else:
+        b0 = (1.0 - cosine) * 0.5 * scale
+        b1 = (1.0 - cosine) * scale
+    return b0, b1, b0, -2.0 * cosine * scale, (1.0 - alpha) * scale
+
+
+def _notch(frequency, quality, sample_rate):
+    omega = 2.0 * math.pi * frequency / sample_rate
+    cosine, sine = math.cos(omega), math.sin(omega)
+    alpha = sine / (2.0 * quality)
+    scale = 1.0 / (1.0 + alpha)
+    return (scale, -2.0 * cosine * scale, scale,
+            -2.0 * cosine * scale, (1.0 - alpha) * scale)
+
+
 @dataclass
 class ProcessedSample:
     filtered: int
@@ -22,13 +64,18 @@ class ProcessedSample:
 class HostECGProcessor:
     """Filter, detect P/Q/R/S/T and calculate short-window HR/HRV."""
 
-    def __init__(self, sample_rate=50):
+    def __init__(self, sample_rate=250):
         self.sample_rate = sample_rate
         self.reset()
 
     def reset(self):
         self.index = 0
-        self.baseline = None
+        self.filters_initialized = False
+        self.display_highpass = _Biquad(_butterworth(0.7, self.sample_rate, True))
+        self.display_notch = _Biquad(_notch(50.0, 25.0, self.sample_rate))
+        self.display_lowpass = _Biquad(_butterworth(25.0, self.sample_rate))
+        self.qrs_highpass = _Biquad(_butterworth(5.0, self.sample_rate, True))
+        self.qrs_lowpass = _Biquad(_butterworth(15.0, self.sample_rate))
         self.lowpass = 0.0
         self.previous = 0.0
         self.energy_window = deque(maxlen=max(3, round(0.12 * self.sample_rate)))
@@ -49,25 +96,41 @@ class HostECGProcessor:
         self.filtered_history = {}
         self.history_order = deque(maxlen=512)
         self.pending_landmark = None
+        self.suppress_until = 0
+
+    def handle_gap(self):
+        """Break timing continuity without discarding previously valid RR data."""
+        self.last_r = None
+        self.energy_window.clear()
+        self.previous_energy = 0.0
+        self.pending_energy = 0.0
+        self.pending_landmark = None
+        self.filtered_history.clear()
+        self.history_order.clear()
+        self.suppress_until = self.index + round(0.25 * self.sample_rate)
 
     def push(self, raw, sequence):
         landmark_updates = []
         raw = float(raw)
-        if self.baseline is None:
-            self.baseline = raw
-        hp_a = math.exp(-2.0 * math.pi * 0.5 / self.sample_rate)
-        lp_a = math.exp(-2.0 * math.pi * 15.0 / self.sample_rate)
-        self.baseline = hp_a * self.baseline + (1.0 - hp_a) * raw
-        highpassed = raw - self.baseline
-        self.lowpass = lp_a * self.lowpass + (1.0 - lp_a) * highpassed
+        if not self.filters_initialized:
+            self.display_highpass.set_steady_state(raw, 0.0)
+            self.display_notch.set_steady_state(0.0, 0.0)
+            self.display_lowpass.set_steady_state(0.0, 0.0)
+            self.qrs_highpass.set_steady_state(raw, 0.0)
+            self.qrs_lowpass.set_steady_state(0.0, 0.0)
+            self.filters_initialized = True
+        display = self.display_highpass.push(raw)
+        display = self.display_notch.push(display)
+        self.lowpass = self.display_lowpass.push(display)
+        qrs = self.qrs_lowpass.push(self.qrs_highpass.push(raw))
         if len(self.history_order) == self.history_order.maxlen:
             self.filtered_history.pop(self.history_order[0], None)
         self.history_order.append(sequence)
         self.filtered_history[sequence] = self.lowpass
         landmark_updates.extend(self._finish_landmarks(sequence))
 
-        derivative = self.lowpass - self.previous
-        self.previous = self.lowpass
+        derivative = qrs - self.previous
+        self.previous = qrs
         self.energy_window.append(derivative * derivative)
         energy = sum(self.energy_window) / len(self.energy_window)
         self.raw_window.append(raw)
@@ -84,7 +147,8 @@ class HostECGProcessor:
 
         r_seq = None
         # One-sample-delayed local maximum of integrated slope energy.
-        if not learning and self.pending_energy >= self.previous_energy and self.pending_energy > energy:
+        suppressed = self.index < self.suppress_until
+        if not learning and not suppressed and self.pending_energy >= self.previous_energy and self.pending_energy > energy:
             refractory = self.last_r is None or self.pending_index - self.last_r >= round(0.25 * self.sample_rate)
             if refractory and self.pending_energy > self.threshold:
                 r_seq = self._waveform_peak(self.pending_index)
@@ -98,7 +162,7 @@ class HostECGProcessor:
         self.pending_energy = energy
         self.pending_index = sequence
 
-        quality = 8 if learning else 0
+        quality = 8 if learning else (4 if suppressed else 0)
         if len(self.clip_window) == self.clip_window.maxlen and sum(self.clip_window) > len(self.clip_window) // 10:
             quality |= 2
         if len(self.raw_window) == self.raw_window.maxlen and max(self.raw_window) - min(self.raw_window) < 16:
@@ -118,20 +182,23 @@ class HostECGProcessor:
         return max(candidates, default=(0.0, detected))[1]
 
     def _smoothed(self, sequence):
+        radius = max(1, round(2 * self.sample_rate / 500))
         values = [self.filtered_history.get(sequence + offset)
-                  for offset in range(-2, 3)]
+                  for offset in range(-radius, radius + 1)]
         if any(value is None for value in values):
             return None
-        return sum(values) / 5.0
+        return sum(values) / len(values)
 
     def _extremum(self, r_seq, first, last, point, direction, fraction, amplitude):
         left = self._smoothed(r_seq + first)
         right = self._smoothed(r_seq + last)
-        if left is None or right is None or last - first < 8:
+        margin = max(1, round(3 * self.sample_rate / 500))
+        minimum_window = max(4, round(8 * self.sample_rate / 500))
+        if left is None or right is None or last - first < minimum_window:
             return None
         floor = max(direction * left, direction * right)
         best, chosen = floor, None
-        for offset in range(first + 3, last - 2):
+        for offset in range(first + margin, last - margin + 1):
             seq = r_seq + offset
             before, value, after = self._smoothed(seq - 1), self._smoothed(seq), self._smoothed(seq + 1)
             if before is None or value is None or after is None:
@@ -148,10 +215,14 @@ class HostECGProcessor:
         polarity = 1.0 if value >= 0 else -1.0
         amplitude = abs(value)
         rr_ms = self.rr[-1] if self.rr else 1000.0
-        p_start = max(-120, -int(rr_ms * 0.15))
-        t_end = min(180, int(rr_ms * 0.27))
+        scale = self.sample_rate / 500.0
+        p_start = round(max(-120, -int(rr_ms * 0.15)) * scale)
+        t_end = round(min(180, int(rr_ms * 0.27)) * scale)
         updates = [(r_seq, 1)]
-        for args in ((p_start, -40, 2, polarity, .02), (-33, -4, 3, -polarity, .015)):
+        p_end = round(-40 * scale)
+        q_start, q_end = round(-33 * scale), round(-4 * scale)
+        for args in ((p_start, p_end, 2, polarity, .02),
+                     (q_start, q_end, 3, -polarity, .015)):
             mark = self._extremum(r_seq, *args, amplitude)
             if mark is not None:
                 updates.append(mark)
@@ -164,13 +235,17 @@ class HostECGProcessor:
             return []
         r_seq, polarity, amplitude, t_end, pending_s, pending_t = pending
         updates = []
-        if pending_s and sequence - r_seq >= 43:
-            mark = self._extremum(r_seq, 4, 40, 4, -polarity, .015, amplitude)
+        scale = self.sample_rate / 500.0
+        s_start, s_end = round(4 * scale), round(40 * scale)
+        t_start = round(45 * scale)
+        settle = max(1, round(3 * scale))
+        if pending_s and sequence - r_seq >= round(43 * scale):
+            mark = self._extremum(r_seq, s_start, s_end, 4, -polarity, .015, amplitude)
             if mark is not None:
                 updates.append(mark)
             pending[4] = False
-        if pending_t and sequence - r_seq >= t_end + 3:
-            mark = self._extremum(r_seq, 45, t_end, 5, polarity, .04, amplitude)
+        if pending_t and sequence - r_seq >= t_end + settle:
+            mark = self._extremum(r_seq, t_start, t_end, 5, polarity, .04, amplitude)
             if mark is not None:
                 updates.append(mark)
             pending[5] = False

@@ -2,6 +2,36 @@
 #include <math.h>
 #include <string.h>
 
+#define LEAD_OFF_CONFIRM_SAMPLES 125U
+#define LEAD_ON_CONFIRM_SAMPLES 250U
+
+static void UpdateLeads(ECGMonitor *m, bool leads_off)
+{
+    if (leads_off)
+    {
+        m->lead_on_samples = 0U;
+        if (!m->leads_off && m->lead_off_samples < LEAD_OFF_CONFIRM_SAMPLES)
+            ++m->lead_off_samples;
+        if (!m->leads_off && m->lead_off_samples >= LEAD_OFF_CONFIRM_SAMPLES)
+        {
+            m->leads_off = true;
+            m->flat_samples = 0U;
+            ECGMonitor_Invalidate(m);
+        }
+    }
+    else
+    {
+        m->lead_off_samples = 0U;
+        if (m->leads_off && m->lead_on_samples < LEAD_ON_CONFIRM_SAMPLES)
+            ++m->lead_on_samples;
+        if (m->leads_off && m->lead_on_samples >= LEAD_ON_CONFIRM_SAMPLES)
+        {
+            m->leads_off = false;
+            m->lead_on_samples = 0U;
+        }
+    }
+}
+
 static float Smoothed(const ECGMonitor *m, uint32_t index)
 {
     float sum = 0.0F;
@@ -78,13 +108,9 @@ const ECGMonitorResult *ECGMonitor_Push(ECGMonitor *m,
     uint32_t candidate;
     const ECGPreprocessResult *p;
     bool bad;
+    bool step_artifact;
     m->result.new_r_peak = false;
-    if (leads_off != m->leads_off) {
-        ECGMonitor_Invalidate(m);
-        ECGPreprocess_Reset(&m->preprocess, (float)raw);
-        m->flat_samples = 0U;
-        m->leads_off = leads_off;
-    }
+    UpdateLeads(m, leads_off);
     p = ECGPreprocess_Push(&m->preprocess, (float)raw);
     m->result.quality_flags = p->quality_flags;
     /* A half-second isoelectric segment is normal at slow rates. Only a
@@ -92,12 +118,13 @@ const ECGMonitorResult *ECGMonitor_Push(ECGMonitor *m,
     if ((p->quality_flags & ECG_QUALITY_FLATLINE) != 0U) {
         if (m->flat_samples < 750U) ++m->flat_samples;
     } else m->flat_samples = 0U;
-    bad = leads_off || m->flat_samples >= 750U ||
+    step_artifact =
+        (p->quality_flags & ECG_QUALITY_STEP_ARTIFACT) != 0U;
+    bad = m->leads_off || m->flat_samples >= 750U ||
           (p->quality_flags & (ECG_QUALITY_CLIPPED |
-           ECG_QUALITY_OUT_OF_RANGE | ECG_QUALITY_STEP_ARTIFACT)) != 0U;
+           ECG_QUALITY_OUT_OF_RANGE)) != 0U;
     if (bad && !m->invalid) {
         ECGMonitor_Invalidate(m);
-        ECGPreprocess_Reset(&m->preprocess, (float)raw);
     }
     m->history[slot] = p->display_sample;
     m->markers[slot] = false;
@@ -108,7 +135,11 @@ const ECGMonitorResult *ECGMonitor_Push(ECGMonitor *m,
             HRV_SetSignalValid(&m->hrv);
         }
         m->result.signal_valid = true;
-        if (QRSDetector_Push(&m->detector, index, p->qrs_sample, &candidate)) {
+        /* An isolated ADC step is not proof that the rhythm became invalid.
+           Skip its QRS decision so it cannot create a false beat, while
+           retaining the completed RR window and any active alarm. */
+        if (!step_artifact &&
+            QRSDetector_Push(&m->detector, index, p->qrs_sample, &candidate)) {
             /* Envelope/filter peaks lag R. Locate the largest absolute
                display extremum in the previous 160 ms, supporting inversion. */
             uint32_t peak = index;
@@ -118,6 +149,8 @@ const ECGMonitorResult *ECGMonitor_Push(ECGMonitor *m,
                 float amplitude = fabsf(m->history[pos % ECG_HISTORY_SIZE]);
                 if (amplitude > largest) { largest = amplitude; peak = pos; }
             }
+            /* Premature/noise candidates are rejected without changing the
+               accepted-R anchor or the accumulated HRV window. */
             HeartRateEvent event = HeartRate_PushRPeak(&m->heart_rate, peak);
             if (event != HEART_RATE_EVENT_REJECTED) {
                 m->markers[peak % ECG_HISTORY_SIZE] = ECG_POINT_R;
@@ -140,10 +173,11 @@ const ECGMonitorResult *ECGMonitor_Push(ECGMonitor *m,
                 m->result.r_sample = peak;
                 if (event == HEART_RATE_EVENT_UPDATED)
                     HRV_PushRR(&m->hrv, m->heart_rate.result.rr_ms);
-            } else {
-                /* A rejected interval breaks continuity for HRV. */
-                HRV_Invalidate(&m->hrv);
-                HRV_SetSignalValid(&m->hrv);
+                else if (event == HEART_RATE_EVENT_GAP) {
+                    /* A genuinely overlong interval breaks RR continuity. */
+                    HRV_Invalidate(&m->hrv);
+                    HRV_SetSignalValid(&m->hrv);
+                }
             }
         }
         if (m->has_peak && (index - m->last_peak > 1250U))

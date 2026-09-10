@@ -8,6 +8,8 @@
 extern "C" {
 #endif
 
+#define QRS_LEARNING_TOP_COUNT 50U
+
 typedef struct
 {
     uint32_t sample_rate_millihz;
@@ -24,6 +26,7 @@ typedef struct
     float previous_envelope;
     float previous_previous_envelope;
     float learning_peak_max;
+    float learning_top[QRS_LEARNING_TOP_COUNT];
     float signal_level;
     float noise_level;
     uint32_t learning_peak_count;

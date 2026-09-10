@@ -25,6 +25,7 @@
 - DMA 队列溢出时原子丢弃未消费样本并重建算法，显示 DATA GAP，恢复有效心率后消除提示。不会把缺失样本压缩成较短 RR。
 - HRV 必须重新收满 30 RR；不连续或被拒绝的 RR 不与之前的窗口拼接。应用接受范围 30–220 BPM；250 ms 不应期限制了可检测的最高速率。仅所列测试条件有回归验证。
 - 为防串口阻塞拖慢显示，默认不输出原始串口数据。需要既有采集工具时，可在构建时给 C 编译器添加 `-DECG_RAW_SERIAL=1`，USART2 输出仍为原始 ADC 整数加换行；需同时观察有无 DATA GAP。
+- 默认通过 USART2 以 115200 baud、100 Hz 输出 `ECGDBG,index,raw,display,qrs,quality,dropped`。可用 `python tools/collect_ecg_debug.py COM7 -d 60` 保存为 CSV；定义 `ECG_RAW_SERIAL=1` 时改回逐点原始 ADC 输出并关闭诊断行。
 
 ## HRV 与蜂鸣器
 

@@ -5,9 +5,33 @@
 #define DEFAULT_SAMPLE_RATE_MILLIHZ 500000U
 #define DEFAULT_LEARNING_MS 2000U
 #define DEFAULT_REFRACTORY_MS 250U
-#define DEFAULT_THRESHOLD_WEIGHT 0.68F
+#define DEFAULT_THRESHOLD_WEIGHT 0.30F
 #define DEFAULT_ENVELOPE_SHIFT 3U
 #define MICRO_UNITS_PER_UNIT 1000000ULL
+
+static void KeepLearningTop(QRSDetectorContext *context, float value)
+{
+    if (context->learning_peak_count < QRS_LEARNING_TOP_COUNT)
+    {
+        context->learning_top[context->learning_peak_count++] = value;
+        return;
+    }
+    uint32_t minimum = 0U;
+    for (uint32_t i = 1U; i < QRS_LEARNING_TOP_COUNT; ++i)
+        if (context->learning_top[i] < context->learning_top[minimum])
+            minimum = i;
+    if (value > context->learning_top[minimum])
+        context->learning_top[minimum] = value;
+}
+
+static float LearningPercentile95(const QRSDetectorContext *context)
+{
+    if (context->learning_peak_count == 0U) return 1.0F;
+    float minimum = context->learning_top[0];
+    for (uint32_t i = 1U; i < context->learning_peak_count; ++i)
+        if (context->learning_top[i] < minimum) minimum = context->learning_top[i];
+    return minimum;
+}
 
 static uint32_t MillisecondsToSamples(uint32_t rate_millihz,
                                       uint16_t milliseconds)
@@ -60,6 +84,8 @@ void QRSDetector_Init(QRSDetectorContext *context,
     context->signal_level = 0.0F;
     context->noise_level = 0.0F;
     context->learning_peak_count = 0U;
+    for (uint32_t i = 0U; i < QRS_LEARNING_TOP_COUNT; ++i)
+        context->learning_top[i] = 0.0F;
     context->processed_samples = 0U;
     context->previous_sample_index = 0U;
     context->last_peak_sample = 0U;
@@ -106,21 +132,19 @@ bool QRSDetector_Push(QRSDetectorContext *context,
 
     if (!context->learning_complete)
     {
+        /* Keep the highest 5% of all learning-envelope samples. Their
+           smallest value is the 95th percentile after a 2 s / 500 Hz
+           learning window. Unlike the former absolute maximum, this is not
+           permanently raised by one contact-motion spike. */
+        KeepLearningTop(context, context->envelope);
         if (local_maximum)
         {
-            /* The mean of all local maxima is dominated by tiny noise peaks
-               on low-amplitude ECG. Seed the signal level from the strongest
-               learning peak; 2 s covers at least one beat at 40 BPM. */
             if (context->previous_envelope > context->learning_peak_max)
                 context->learning_peak_max = context->previous_envelope;
-            ++context->learning_peak_count;
         }
         if (context->processed_samples >= learning_samples)
         {
-            context->signal_level =
-                (context->learning_peak_count > 0U)
-                    ? context->learning_peak_max
-                    : context->previous_envelope;
+            context->signal_level = LearningPercentile95(context);
             if (context->signal_level < 1.0F)
             {
                 context->signal_level = 1.0F;

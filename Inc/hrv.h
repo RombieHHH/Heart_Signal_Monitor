@@ -43,6 +43,7 @@ typedef struct
 {
     HRVStatus status;
     HRVAlarmEvent alarm_event;
+    /* Valid after two RR intervals; alarm evaluation begins at 30 RR. */
     bool metrics_valid;
     bool alarm_active;
     uint8_t rr_count;
@@ -63,8 +64,9 @@ typedef struct
     uint8_t normal_updates;
 } HRVContext;
 
-/* Initializes the 30-RR short-window analyzer. A NULL config selects the
- * thresholds and confirmation counts from the design report. */
+/* Initializes the 30-RR short-window analyzer. Running SDNN/RMSSD become
+ * available after two RR intervals; alarm evaluation starts when all 30 are
+ * collected. A NULL config selects the default alarm thresholds. */
 void HRV_Init(HRVContext *context, const HRVConfig *config);
 
 /* Adds one continuous, quality-qualified RR interval in milliseconds.

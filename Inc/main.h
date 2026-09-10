@@ -61,6 +61,8 @@ void Error_Handler(void);
 #define AD8232_INPUT_GPIO_Port GPIOB
 #define LCD_CS_Pin GPIO_PIN_12
 #define LCD_CS_GPIO_Port GPIOB
+#define LED_Pin GPIO_PIN_14
+#define LED_GPIO_Port GPIOB
 #define AD8232_L0__Pin GPIO_PIN_6
 #define AD8232_L0__GPIO_Port GPIOC
 #define AD8232_L0_C7_Pin GPIO_PIN_7

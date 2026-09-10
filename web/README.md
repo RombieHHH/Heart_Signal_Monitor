@@ -74,8 +74,8 @@ python main.py --port COM29
 
 ### 下行口（下位机 → 上位机）二进制帧
 
-当前蓝牙协议为 version 2/type 2：MCU 以 500 Hz 发送 8 位量化 ADC 电平。
-每 100 ms 发送 50 个量化电平。固定开销 26 字节头 + 50 字节载荷 + CRC2 字节 = 78 字节，平均约 780 B/s。
+当前蓝牙协议为 version 2/type 2：MCU 保持 500 Hz 采样，相邻两点平均后以 250 Hz 发送 8 位量化 ADC 电平。
+每 400 ms 发送 100 个量化电平。固定开销 26 字节头 + 100 字节载荷 + CRC2 字节 = 128 字节，平均约 320 B/s。
 载荷每字节为 `raw_adc >> 4`；后端恢复 ADC 电平并重新计算滤波、P/Q/R/S/T、心率、HRV、质量和报警。
 
 | 字段 | 类型/字节 | 含义 |
@@ -84,7 +84,7 @@ python main.py --port COM29
 | version / type | u8 / u8 | 版本 2；类型 2=紧凑电平帧 |
 | payload_len / flags | u16 / u16 | 载荷长度；bit0=采集缺口 bit1=发送丢帧 |
 | frame_seq / sample0 | u32 / u32 | 帧号；本帧首样本采样序号 |
-| sample_rate / count | u16 / u16 | 500 Hz；样本数 50 |
+| sample_rate / count | u16 / u16 | 250 Hz；样本数 100 |
 | hr / sd_rr / rmssd_rr | u16×3 | 固定 `0xFFFF`，由上位机计算 |
 | level samples | count×1 | 8 位 ADC 电平 |
 | CRC16 | u16 | CCITT-FALSE（poly 0x1021，init 0xFFFF，覆盖 version~载荷） |
@@ -93,7 +93,8 @@ python main.py --port COM29
 
 - `quality` 位：bit1 削顶，bit2 平线/无效，bit3 学习中
 - `alarm`：0 积累，1 信号无效，2 正常，3 疑似节律异常
-- CRC 错误整帧丢弃；凭 sample0/frame_seq 判别缺口（详见 `recorder`）。
+- CRC 错误整帧丢弃；凭 sample0/frame_seq 判别缺口（详见 `recorder`）。网页保留已经显示的波形，只丢弃缺口前尚未显示的延迟数据，收到后续有效帧后继续绘制。
+- 连续 1.2 秒没有有效帧即判定传输断开；后端和网页会清除历史波形及过期测量值，避免把静止曲线误认为实时数据。
 
 ### 上行 WebSocket / REST 数据（JSON）
 
@@ -103,14 +104,17 @@ python main.py --port COM29
 {
   "connected": true,              // 串口连接状态
   "port": "COM5", "baudrate": 115200,
-  "sample_rate": 500,
+  "sample_rate": 250,
   "sample_index": 123456,         // 最近样本序号
   "frame_seq": 2469,
   "last_frame_age": 42.1,         // 距最后有效帧时间(ms)
-  "statistics": {                 // 解析累计统计
+    "statistics": {                 // 解析累计统计
     "frames_ok": 2469, "frames_crc_error": 0,
     "frames_payload_error": 0, "frames_unsynced": 0,
-    "recovered_bytes": 0
+    "recovered_bytes": 0,
+    "frame_sequence_gaps": 0,
+    "recent_frame_success_percent": 100.0, // 最近 10 秒有效帧率
+    "recent_frame_errors": 0
   },
   "metrics": {                    // 最近一帧测量值
     "hr_bpm": 72.0, "sd_rr_ms": 8.3, "rmssd_rr_ms": 9.1,
@@ -118,6 +122,9 @@ python main.py --port COM29
   },
   "samples": {                    // 波形（默认最近 4s/2000 点）
     "start_index": 121457,
+    "end_index": 123456,          // MCU 原始采样序号，遇丢帧时允许跳变
+    "stream_start_index": 1000,
+    "stream_end_index": 2999,     // 网页连续流序号，用于增量追加且不清屏
     "filtered": [ ... ],          // 整形数组
     "raw": [ ... ],
     "r_marks": [0, 1, 0, ...],    // R 事件标记(0/1)，兼容字段

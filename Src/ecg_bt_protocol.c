@@ -31,14 +31,24 @@ bool ECGBTProtocol_Push(ECGBTProtocol *protocol, uint32_t source_index,
     if (protocol->has_source_sample &&
         source_index != protocol->next_source_index) {
         if (protocol->count != 0U) ECGBTProtocol_Sent(protocol, false);
+        protocol->downsample_count = 0U;
         protocol->flags |= 1U;
     }
     protocol->has_source_sample = true;
     protocol->next_source_index = source_index + 1U;
 
-    if (protocol->count == 0U) PutU32(protocol->data + 12, source_index);
+    /* Average adjacent 500 Hz ADC samples before decimation to 250 Hz. */
+    if ((source_index & 1U) == 0U) {
+        protocol->downsample_sum = raw_adc;
+        protocol->downsample_count = 1U;
+        return false;
+    }
+    if (protocol->downsample_count != 1U) return false;
+    uint16_t averaged = (uint16_t)((protocol->downsample_sum + raw_adc + 1U) / 2U);
+    protocol->downsample_count = 0U;
+    if (protocol->count == 0U) PutU32(protocol->data + 12, source_index / 2U);
     /* The ADC is 12-bit. Mid-bin reconstruction on the host limits error to 8 counts. */
-    protocol->data[26U + protocol->count] = (uint8_t)((raw_adc & 0x0FFFU) >> 4);
+    protocol->data[26U + protocol->count] = (uint8_t)((averaged & 0x0FFFU) >> 4);
     if (++protocol->count != ECG_BT_SAMPLE_COUNT) return false;
 
     protocol->data[0] = 0xA5U;

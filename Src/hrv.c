@@ -66,24 +66,31 @@ static void HRV_CalculateMetrics(HRVContext *context)
     float squared_deviation_sum = 0.0F;
     float squared_difference_sum = 0.0F;
     float mean;
+    uint8_t count = context->result.rr_count;
     uint8_t oldest;
     uint8_t i;
 
-    for (i = 0U; i < HRV_RR_WINDOW_SIZE; ++i)
+    if (count < 2U)
     {
-        sum += (float)context->rr_window[i];
+        return;
     }
-    mean = sum / (float)HRV_RR_WINDOW_SIZE;
 
-    for (i = 0U; i < HRV_RR_WINDOW_SIZE; ++i)
+    oldest = (count == HRV_RR_WINDOW_SIZE) ? context->rr_write_index : 0U;
+    for (i = 0U; i < count; ++i)
     {
-        float deviation = (float)context->rr_window[i] - mean;
+        uint8_t index = (uint8_t)((oldest + i) % HRV_RR_WINDOW_SIZE);
+        sum += (float)context->rr_window[index];
+    }
+    mean = sum / (float)count;
+
+    for (i = 0U; i < count; ++i)
+    {
+        uint8_t index = (uint8_t)((oldest + i) % HRV_RR_WINDOW_SIZE);
+        float deviation = (float)context->rr_window[index] - mean;
         squared_deviation_sum += deviation * deviation;
     }
 
-    /* rr_write_index points to the oldest interval once the ring is full. */
-    oldest = context->rr_write_index;
-    for (i = 1U; i < HRV_RR_WINDOW_SIZE; ++i)
+    for (i = 1U; i < count; ++i)
     {
         uint8_t previous =
             (uint8_t)((oldest + i - 1U) % HRV_RR_WINDOW_SIZE);
@@ -96,9 +103,9 @@ static void HRV_CalculateMetrics(HRVContext *context)
 
     context->result.mean_rr_ms = mean;
     context->result.sdnn_ms =
-        HRV_Sqrt(squared_deviation_sum / (float)(HRV_RR_WINDOW_SIZE - 1U));
+        HRV_Sqrt(squared_deviation_sum / (float)(count - 1U));
     context->result.rmssd_ms =
-        HRV_Sqrt(squared_difference_sum / (float)(HRV_RR_WINDOW_SIZE - 1U));
+        HRV_Sqrt(squared_difference_sum / (float)(count - 1U));
     context->result.cv = context->result.sdnn_ms / mean;
     context->result.d = context->result.rmssd_ms / mean;
     context->result.metrics_valid = true;
@@ -235,13 +242,19 @@ HRVAlarmEvent HRV_PushRR(HRVContext *context, uint16_t rr_ms)
         ++context->result.rr_count;
     }
 
+    /* Show useful running metrics as soon as two valid RR intervals exist.
+     * Alarm decisions still wait for the complete 30-RR window below. */
+    if (context->result.rr_count >= 2U)
+    {
+        HRV_CalculateMetrics(context);
+    }
+
     if (context->result.rr_count < HRV_RR_WINDOW_SIZE)
     {
         context->result.status = HRV_STATUS_COLLECTING;
         return HRV_ALARM_EVENT_NONE;
     }
 
-    HRV_CalculateMetrics(context);
     context->result.status = context->result.alarm_active
                                  ? HRV_STATUS_SUSPECTED_ARRHYTHMIA
                                  : HRV_STATUS_NORMAL;

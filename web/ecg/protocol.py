@@ -18,7 +18,7 @@ ecg_host.ecg.protocol
     +------------------------------------------------------------------------------+
 
 版本 1/type 1 是原始 10 字节记录协议。版本 2/type 2 是蓝牙紧凑协议：
-500 Hz、每 100 ms 发送 50 个 8 位 ADC 电平，载荷 50 字节，总帧长 78 字节。
+250 Hz、每 400 ms 发送 100 个 8 位 ADC 电平，载荷 100 字节，总帧长 128 字节。
 紧凑值由 12 位 ADC 右移 4 位得到，上位机以量化区间中点恢复。
 
 字段说明：
@@ -31,8 +31,8 @@ ecg_host.ecg.protocol
               其余位保留为 0
     frame_seq 帧号（递增）
     sample0   本帧首样本的采样序号
-    sample_rate 采样率，500 Hz
-    count     本帧样本数，默认 50
+    sample_rate 原协议为 500 Hz；紧凑协议当前为 250 Hz
+    count     本帧样本数，type 1 默认 50；type 2 当前为 100
     hr        心率，单位 0.1 BPM；0xFFFF 表示无效
     sd_rr     短窗 RR 标准差，单位 0.1 ms；0xFFFF 表示无效
     rmssd_rr  短窗 RMSSD，单位 0.1 ms；0xFFFF 表示无效
@@ -73,7 +73,9 @@ RECORD_SIZE = 10              # 单条样本记录
 CRC_SIZE = 2
 MIN_FRAME_SIZE = HEADER_SIZE + CRC_SIZE          # 26 + 2 = 28
 MAX_PAYLOAD = 500
-MAX_COUNT = MAX_PAYLOAD // RECORD_SIZE           # 50
+MAX_LEGACY_COUNT = MAX_PAYLOAD // RECORD_SIZE     # type 1: 50 records
+MAX_COMPACT_COUNT = MAX_PAYLOAD                   # type 2: 500 one-byte levels
+MAX_COUNT = MAX_LEGACY_COUNT                      # compatibility for legacy tools
 
 
 class Quality:
@@ -198,7 +200,8 @@ class FrameParser:
         expected_payload = count if ftype == TYPE_COMPACT_LEVEL else count * RECORD_SIZE
         valid_type = ((ftype == TYPE_WAVEFORM and version == 1) or
                       (ftype == TYPE_COMPACT_LEVEL and version == 2))
-        if (not valid_type or payload_len > MAX_PAYLOAD or count > MAX_COUNT
+        max_count = MAX_COMPACT_COUNT if ftype == TYPE_COMPACT_LEVEL else MAX_LEGACY_COUNT
+        if (not valid_type or payload_len > MAX_PAYLOAD or count > max_count
                 or payload_len != expected_payload):
             self.stats["frames_payload_error"] += 1
             self._buf.pop(0)  # 丢弃一个字节重新搜索

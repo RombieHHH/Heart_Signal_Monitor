@@ -7,10 +7,15 @@
 #define DEFAULT_QUALITY_WINDOW_SAMPLES 250U
 #define DEFAULT_LEARNING_SAMPLES 1000U
 
-static const ECGBiquadCoefficients DISPLAY_HIGHPASS_0P5_HZ = {
-    0.99556697F, -1.99113394F, 0.99556697F, -1.99111429F, 0.99115360F};
-static const ECGBiquadCoefficients DISPLAY_LOWPASS_40_HZ = {
-    0.04613180F, 0.09226360F, 0.04613180F, -1.30728503F, 0.49181224F};
+static const ECGBiquadCoefficients DISPLAY_HIGHPASS_0P7_HZ = {
+    0.993799268F, -1.987598536F, 0.993799268F,
+    -1.987560087F, 0.987636986F};
+static const ECGBiquadCoefficients DISPLAY_NOTCH_50_HZ_Q25 = {
+    0.988380886F, -1.599233867F, 0.988380886F,
+    -1.599233867F, 0.976761772F};
+static const ECGBiquadCoefficients DISPLAY_LOWPASS_25_HZ = {
+    0.020083366F, 0.040166731F, 0.020083366F,
+    -1.561018076F, 0.641351538F};
 static const ECGBiquadCoefficients QRS_HIGHPASS_5_HZ = {
     0.95654323F, -1.91308645F, 0.95654323F, -1.91119707F, 0.91497583F};
 static const ECGBiquadCoefficients QRS_LOWPASS_15_HZ = {
@@ -154,8 +159,9 @@ void ECGPreprocess_Init(ECGPreprocessContext *context,
         context->config.learning_samples = defaults.learning_samples;
     }
 
-    context->display_highpass.coefficients = DISPLAY_HIGHPASS_0P5_HZ;
-    context->display_lowpass.coefficients = DISPLAY_LOWPASS_40_HZ;
+    context->display_highpass.coefficients = DISPLAY_HIGHPASS_0P7_HZ;
+    context->display_notch.coefficients = DISPLAY_NOTCH_50_HZ_Q25;
+    context->display_lowpass.coefficients = DISPLAY_LOWPASS_25_HZ;
     context->qrs_highpass.coefficients = QRS_HIGHPASS_5_HZ;
     context->qrs_lowpass.coefficients = QRS_LOWPASS_15_HZ;
 }
@@ -183,6 +189,7 @@ void ECGPreprocess_Reset(ECGPreprocessContext *context, float initial_raw)
     context->initialized = true;
 
     BiquadSetSteadyState(&context->display_highpass, initial_raw, 0.0F);
+    BiquadSetSteadyState(&context->display_notch, 0.0F, 0.0F);
     BiquadSetSteadyState(&context->display_lowpass, 0.0F, 0.0F);
     BiquadSetSteadyState(&context->qrs_highpass, initial_raw, 0.0F);
     BiquadSetSteadyState(&context->qrs_lowpass, 0.0F, 0.0F);
@@ -206,6 +213,8 @@ const ECGPreprocessResult *ECGPreprocess_Push(ECGPreprocessContext *context,
     context->result.raw_sample = raw_sample;
     context->result.quality_flags = ECG_QUALITY_OK;
     display_highpassed = BiquadPush(&context->display_highpass, raw_sample);
+    display_highpassed = BiquadPush(&context->display_notch,
+                                    display_highpassed);
     context->result.display_sample =
         BiquadPush(&context->display_lowpass, display_highpassed);
     qrs_highpassed = BiquadPush(&context->qrs_highpass, raw_sample);

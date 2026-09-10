@@ -36,6 +36,8 @@ typedef struct {
     bool pending_s, pending_t;
     uint32_t sample_index;
     uint32_t flat_samples;
+    uint16_t lead_off_samples;
+    uint16_t lead_on_samples;
     uint32_t last_peak;
     bool has_peak;
     bool leads_off;

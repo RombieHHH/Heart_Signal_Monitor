@@ -66,6 +66,7 @@ typedef struct
     ECGPreprocessConfig config;
     ECGPreprocessResult result;
     ECGBiquad display_highpass;
+    ECGBiquad display_notch;
     ECGBiquad display_lowpass;
     ECGBiquad qrs_highpass;
     ECGBiquad qrs_lowpass;
@@ -81,8 +82,8 @@ typedef struct
 /* Loads the report's 500 Hz coefficients and general quality-control defaults. */
 void ECGPreprocess_DefaultConfig(ECGPreprocessConfig *config);
 
-/* Initializes dual filter paths: 0.5...40 Hz for display and 5...15 Hz for
- * QRS detection. The default coefficients require a 500 Hz input stream. */
+/* Initializes dual filter paths: 0.7...25 Hz plus a 50 Hz notch for display,
+ * and 5...15 Hz for QRS detection. Coefficients require a 500 Hz stream. */
 void ECGPreprocess_Init(ECGPreprocessContext *context,
                         const ECGPreprocessConfig *config);
 

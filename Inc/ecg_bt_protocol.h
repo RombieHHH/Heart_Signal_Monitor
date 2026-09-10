@@ -4,9 +4,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define ECG_BT_SAMPLE_RATE 500U
-#define ECG_BT_SAMPLE_COUNT 50U
-#define ECG_BT_FRAME_SIZE 78U
+#define ECG_BT_SAMPLE_RATE 250U
+#define ECG_BT_SAMPLE_COUNT 100U
+#define ECG_BT_FRAME_SIZE (26U + ECG_BT_SAMPLE_COUNT + 2U)
 
 typedef struct {
     uint8_t data[ECG_BT_FRAME_SIZE];
@@ -14,6 +14,8 @@ typedef struct {
     uint32_t next_source_index;
     uint16_t count;
     uint16_t flags;
+    uint32_t downsample_sum;
+    uint8_t downsample_count;
     bool has_source_sample;
 } ECGBTProtocol;
 

@@ -15,7 +15,10 @@ typedef enum
     HEART_RATE_EVENT_NONE = 0,
     HEART_RATE_EVENT_FIRST_PEAK,
     HEART_RATE_EVENT_UPDATED,
-    HEART_RATE_EVENT_REJECTED
+    HEART_RATE_EVENT_REJECTED,
+    /* The peak is accepted as a new anchor, but the preceding RR interval
+     * exceeded the configured range and must not enter HRV statistics. */
+    HEART_RATE_EVENT_GAP
 } HeartRateEvent;
 
 typedef struct
@@ -53,7 +56,9 @@ void HeartRate_Init(HeartRateContext *context, const HeartRateConfig *config);
 
 /* Supplies an R-peak position using the continuously increasing ADC sample
  * sequence number. The subtraction is safe across a uint32_t wraparound.
- * On HEART_RATE_EVENT_UPDATED, rr_ms can be passed directly to HRV_PushRR(). */
+ * On HEART_RATE_EVENT_UPDATED, rr_ms can be passed directly to HRV_PushRR().
+ * HEART_RATE_EVENT_REJECTED is an early/noise candidate and keeps the current
+ * anchor. HEART_RATE_EVENT_GAP re-anchors after an overlong interval. */
 HeartRateEvent HeartRate_PushRPeak(HeartRateContext *context,
                                   uint32_t r_sample_index);
 

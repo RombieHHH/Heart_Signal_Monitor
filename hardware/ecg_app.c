@@ -7,12 +7,16 @@
 #include "tim.h"
 #include "usart.h"
 #include "ecg_bt_protocol.h"
+#include <stdio.h>
 #include <string.h>
 
 /* Optional raw serial stream, compatible with the existing collection tools.
    Disabled for acceptance display to keep UART stalls out of acquisition. */
 #ifndef ECG_RAW_SERIAL
 #define ECG_RAW_SERIAL 0
+#endif
+#ifndef ECG_UART2_DEBUG
+#define ECG_UART2_DEBUG 1
 #endif
 _Static_assert(AD8232_SAMPLE_RATE_HZ == ECG_MONITOR_RATE, "Filter rate mismatch");
 static ECGMonitor monitor;
@@ -23,10 +27,10 @@ static uint16_t uart3_offset = ECG_BT_FRAME_SIZE;
 static uint32_t uart3_next_tick;
 
 #define UART3_CHUNK_BYTES 1U
-#define UART3_CHUNK_INTERVAL_MS 1U
+#define UART3_CHUNK_INTERVAL_MS 2U
 
-/* Spread a 528-byte frame over ~66 ms instead of a ~6 ms UART burst.
-   Bluetooth transparent transports can buffer differently from USB UARTs. */
+/* Pace the compact frame instead of sending one large UART burst.
+   A 128-byte frame takes about 256 ms and is produced every 400 ms. */
 static void PollUart3(void)
 {
     uint32_t now = HAL_GetTick();
@@ -40,9 +44,41 @@ static void PollUart3(void)
     }
 }
 static ECGPlot plot;
-static uint32_t dropped, last_data_tick, info_tick;
+static uint32_t dropped, last_data_tick, last_restart_tick, info_tick;
 static bool stalled, gap_notice;
 static volatile bool scale_requested;
+
+#if ECG_UART2_DEBUG && !ECG_RAW_SERIAL
+static uint8_t uart2_debug[128];
+
+static int32_t Rounded(float value)
+{
+    return (int32_t)(value >= 0.0F ? value + 0.5F : value - 0.5F);
+}
+
+static void DebugUart2(uint32_t sample_index, uint16_t raw)
+{
+    if ((sample_index % 5U) != 0U ||
+        huart2.gState != HAL_UART_STATE_READY) return;
+    const ECGPreprocessResult *p = &monitor.preprocess.result;
+    int length = snprintf((char *)uart2_debug, sizeof(uart2_debug),
+        "ECGDBG,%lu,%u,%ld,%ld,%lu,%u,%u,%u,%u,%u,%ld,%lu\r\n",
+        (unsigned long)sample_index, (unsigned)raw,
+        (long)Rounded(p->display_sample), (long)Rounded(p->qrs_sample),
+        (unsigned long)p->quality_flags,
+        monitor.leads_off ? 1U : 0U,
+        monitor.result.signal_valid ? 1U : 0U,
+        monitor.detector.learning_complete ? 1U : 0U,
+        monitor.heart_rate.result.valid ? 1U : 0U,
+        (unsigned)monitor.heart_rate.result.rr_count,
+        (long)Rounded(monitor.detector.noise_level +
+            monitor.detector.config.threshold_weight *
+            (monitor.detector.signal_level - monitor.detector.noise_level)),
+        (unsigned long)AD8232_GetDroppedSampleCount());
+    if (length > 0 && length < (int)sizeof(uart2_debug))
+        (void)HAL_UART_Transmit_IT(&huart2, uart2_debug, (uint16_t)length);
+}
+#endif
 
 static void RenderColumn(uint16_t x)
 {
@@ -58,6 +94,19 @@ static void Plot(const ECGMonitorResult *r)
     int x = ECGPlot_Push(&plot, r->waveform, r->point);
     if (x < 0) return;
     RenderColumn((uint16_t)x);
+    /* Move the detection line and refresh columns as they cross the three
+       old-trace brightness thresholds. */
+    static const uint16_t fade_ages[] = {
+        ECG_PLOT_FADE_START_AGE,
+        ECG_PLOT_FADE_MID_AGE,
+        ECG_PLOT_FADE_DARK_AGE
+    };
+    for (unsigned i = 0U; i < sizeof(fade_ages) / sizeof(fade_ages[0]); ++i) {
+        uint16_t fade_x = (uint16_t)((plot.x + ECG_PLOT_WIDTH - 1U -
+                                      fade_ages[i]) % ECG_PLOT_WIDTH);
+        if (fade_x != (uint16_t)x) RenderColumn(fade_x);
+    }
+    RenderColumn(plot.x);
     /* Refresh neighbors immediately when an old/new annotation changes.
        The compositor retains the full square and glyph on future refreshes. */
     if (had_marker || plot.marker[x] != UINT16_MAX)
@@ -150,7 +199,7 @@ void ECGApp_Init(void)
     DrawStaticInfo();
     DrawInfo();
     if (AD8232_Init() != HAL_OK) Error_Handler();
-    info_tick = last_data_tick = HAL_GetTick();
+    info_tick = last_data_tick = last_restart_tick = HAL_GetTick();
 }
 
 void ECGApp_Poll(void)
@@ -179,7 +228,12 @@ void ECGApp_Poll(void)
     for (uint32_t n = 0U; n < 25U && AD8232_ReadIndexedSample(&sample, &sample_index); ++n) {
         if (stalled) { ECGMonitor_Init(&monitor); stalled = false; }
         last_data_tick = HAL_GetTick();
-        Plot(ECGMonitor_Push(&monitor, sample, AD8232_AreLeadsOff() != 0U));
+        const ECGMonitorResult *result =
+            ECGMonitor_Push(&monitor, sample, AD8232_AreLeadsOff() != 0U);
+        Plot(result);
+#if ECG_UART2_DEBUG && !ECG_RAW_SERIAL
+        DebugUart2(sample_index, sample);
+#endif
         if (ECGBTProtocol_Push(&protocol, sample_index, sample)) {
             bool accepted = false;
             if (uart3_offset == ECG_BT_FRAME_SIZE && huart3.gState == HAL_UART_STATE_READY) {
@@ -196,9 +250,20 @@ void ECGApp_Poll(void)
 #endif
     }
     now = HAL_GetTick();
-    if (!stalled && now - last_data_tick > 100U) {
-        ECGMonitor_Invalidate(&monitor);
-        stalled = true;
+    if (now - last_data_tick > 100U) {
+        if (!stalled) {
+            ECGMonitor_Invalidate(&monitor);
+            stalled = true;
+        }
+        /* DMA/timer faults otherwise leave the unit in ADC STOP forever.
+           Retry at a bounded rate; the first new indexed sample clears it. */
+        if (now - last_restart_tick >= 500U) {
+            last_restart_tick = now;
+            if (AD8232_Restart() == HAL_OK) {
+                dropped = AD8232_GetDroppedSampleCount();
+                last_data_tick = now;
+            }
+        }
     }
     if (monitor.heart_rate.result.valid) gap_notice = false;
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4,

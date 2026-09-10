@@ -956,7 +956,7 @@ body::before {
           <div class="waveform-info">
             <div class="waveform-info-item">
               <span class="waveform-info-label">采样率</span>
-              <span class="waveform-info-value" id="sampleRate">500 Hz</span>
+              <span class="waveform-info-value" id="sampleRate">250 Hz</span>
             </div>
             <div class="waveform-info-item info-sample">
               <span class="waveform-info-label">速度</span>
@@ -1112,6 +1112,8 @@ const ECGApp = (function() {
   let sampleWriteIdx = 0;
   let sampleReadIdx = 0;
   let lastQueuedSample = null;
+  let lastQueuedStream = null;
+  let waveformHasData = false;
 
   // Waveform scaling
   let waveMin = -250;
@@ -1138,7 +1140,7 @@ const ECGApp = (function() {
 
   let currentPort = '';
   let currentBaudrate = 0;
-  let currentSampleRate = 500;
+  let currentSampleRate = 250;
   let currentSampleIndex = 0;
   let currentAlarm = 0;
   let currentQuality = 0;
@@ -1259,8 +1261,7 @@ const ECGApp = (function() {
 
     ws.onopen = function() {
       isConnected = false;
-      lastQueuedSample = null;
-      sampleReadIdx = sampleWriteIdx = 0;
+      clearWaveformDisplay();
       isSimulating = false;
       reconnectAttempts = 0;
       hideReconnectOverlay();
@@ -1285,6 +1286,7 @@ const ECGApp = (function() {
 
     ws.onclose = function() {
       isConnected = false;
+      clearWaveformDisplay();
       updateConnectionStatus('disconnected');
       ws = null;
 
@@ -1300,6 +1302,7 @@ const ECGApp = (function() {
 
   function handleConnectionError() {
     isConnected = false;
+    clearWaveformDisplay();
     updateConnectionStatus('disconnected');
     showReconnectOverlay();
   }
@@ -1531,12 +1534,36 @@ const ECGApp = (function() {
   // ============================================================
   //  Data Handling
   // ============================================================
+  function clearWaveformDisplay() {
+    sampleReadIdx = sampleWriteIdx = 0;
+    sampleBuffer.fill(0);
+    sampleRBuffer.fill(0);
+    samplePointBuffer.fill(0);
+    if (scanBuffer) scanBuffer.fill(0);
+    if (scanRBuffer) scanRBuffer.fill(0);
+    if (scanPointBuffer) scanPointBuffer.fill(0);
+    scanX = 0;
+    lastQueuedSample = null;
+    lastQueuedStream = null;
+    waveformHasData = false;
+    displayedHR = targetHR = 0;
+    displayedSDNN = targetSDNN = 0;
+    displayedRMSSD = targetRMSSD = 0;
+    currentAlarm = 1;
+    currentQuality = 4;
+  }
+
   function handleDataFrame(data) {
     isConnected = data.connected === true;
     updateConnectionStatus(isConnected ? 'connected' : 'disconnected');
+    if (isConnected && data.statistics && data.statistics.recent_frame_success_percent < 99.5) {
+      el.statusText.textContent = `已连接 · 近10秒有效帧 ${data.statistics.recent_frame_success_percent}%`;
+    }
     if (!isConnected && data.serial_open) {
-      el.statusText.textContent = data.statistics && data.statistics.frames_crc_error > 0
-        ? '串口有数据，CRC 校验失败' : '串口已打开，等待完整有效帧';
+      const timedOut = Number.isFinite(data.last_frame_age) && data.last_frame_age >= 1200;
+      const recentErrors = data.statistics && data.statistics.recent_frame_errors > 0;
+      el.statusText.textContent = timedOut ? '数据传输已断开' :
+        (recentErrors ? '串口有数据，CRC 校验失败' : '串口已打开，等待完整有效帧');
     }
     // Update connection info
     if (data.port !== undefined) currentPort = data.port;
@@ -1554,6 +1581,13 @@ const ECGApp = (function() {
     if (data.frame_seq !== undefined) stats.frame_seq = data.frame_seq;
     if (data.last_frame_age !== undefined) stats.last_frame_age = data.last_frame_age;
 
+    // A backend connection can remain open while the MCU/HC06 data stream is
+    // gone. Never replay the last valid snapshot as if it were live data.
+    if (!isConnected) {
+      if (waveformHasData) clearWaveformDisplay();
+      return;
+    }
+
     // Update metrics
     if (data.metrics) {
       targetHR = data.metrics.hr_bpm || 0;
@@ -1568,12 +1602,16 @@ const ECGApp = (function() {
       const filtered = data.samples.filtered;
       const rMarks = data.samples.r_marks || [];
       const pointMarks = data.samples.point_marks || rMarks;
-      const start = data.samples.start_index;
+      const hasStreamIndex = Number.isInteger(data.samples.stream_start_index) &&
+                             Number.isInteger(data.samples.stream_end_index);
+      const start = hasStreamIndex ? data.samples.stream_start_index : data.samples.start_index;
+      const end = hasStreamIndex ? data.samples.stream_end_index :
+                  (Number.isInteger(start) && filtered.length ? (start + filtered.length - 1) >>> 0 : null);
+      let previousEnd = hasStreamIndex ? lastQueuedStream : lastQueuedSample;
       let first = 0;
-      if (Number.isInteger(start) && filtered.length) {
-        const end = (start + filtered.length - 1) >>> 0;
-        if (lastQueuedSample !== null) {
-          const delta = (end - lastQueuedSample) >>> 0;
+      if (Number.isInteger(start) && Number.isInteger(end) && filtered.length) {
+        if (previousEnd !== null) {
+          const delta = (end - previousEnd) >>> 0;
           if (delta === 0) return; // Repeated 4-second snapshot, not new samples.
           if (delta < 0x80000000 && delta <= filtered.length) {
             first = filtered.length - delta;
@@ -1585,7 +1623,8 @@ const ECGApp = (function() {
             if (scanPointBuffer) scanPointBuffer.fill(0);
           }
         }
-        lastQueuedSample = end;
+        if (hasStreamIndex) lastQueuedStream = end;
+        else lastQueuedSample = end;
       }
       for (let i = first; i < filtered.length; i++) {
         const next = (sampleWriteIdx + 1) % sampleBufferSize;
@@ -1595,6 +1634,7 @@ const ECGApp = (function() {
         sampleRBuffer[sampleWriteIdx] = rMarks[i] || 0;
         samplePointBuffer[sampleWriteIdx] = pointMarks[i] || 0;
         sampleWriteIdx = next;
+        waveformHasData = true;
       }
     }
   }

@@ -147,7 +147,7 @@ HeartRateEvent HeartRate_PushRPeak(HeartRateContext *context,
         /* Re-anchor after a missed peak or an out-of-range pause, otherwise
          * every following peak would remain too far from the old anchor. */
         context->last_r_sample = r_sample_index;
-        return HEART_RATE_EVENT_REJECTED;
+        return HEART_RATE_EVENT_GAP;
     }
 
     context->last_r_sample = r_sample_index;

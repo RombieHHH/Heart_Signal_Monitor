@@ -55,7 +55,7 @@ def main(argv=None):
     log = logging.getLogger("ecg.main")
 
     record_dir = args.record_dir or os.path.join(BASE_DIR, "recordings")
-    store = datastore.DataStore(window_samples=2000)  # 4 s @ 500 Hz
+    store = datastore.DataStore(window_samples=1000)  # 4 s @ 250 Hz
 
     recorder = None
     if not args.no_record:

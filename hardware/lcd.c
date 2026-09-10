@@ -17,7 +17,7 @@
 #define LCD_CMD_MADCTL  0x36U
 #define LCD_CMD_COLMOD  0x3AU
 
-#define LCD_SPI_TIMEOUT        1000U
+#define LCD_SPI_TIMEOUT        10U
 #define LCD_COLOR_CHUNK_PIXELS 64U
 
 static void LCD_Select(void)
@@ -30,11 +30,20 @@ static void LCD_Unselect(void)
     HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_SET);
 }
 
+static HAL_StatusTypeDef LCD_Transmit(const uint8_t *data, uint16_t size)
+{
+    HAL_StatusTypeDef status =
+        HAL_SPI_Transmit(&hspi2, (uint8_t *)data, size, LCD_SPI_TIMEOUT);
+    if (status != HAL_OK)
+        (void)HAL_SPI_Abort(&hspi2);
+    return status;
+}
+
 static void LCD_WriteCommand(uint8_t command)
 {
     HAL_GPIO_WritePin(LCD_DC_GPIO_Port, LCD_DC_Pin, GPIO_PIN_RESET);
     LCD_Select();
-    (void)HAL_SPI_Transmit(&hspi2, &command, 1U, LCD_SPI_TIMEOUT);
+    (void)LCD_Transmit(&command, 1U);
     LCD_Unselect();
 }
 
@@ -47,7 +56,7 @@ static void LCD_WriteData(const uint8_t *data, uint16_t size)
 
     HAL_GPIO_WritePin(LCD_DC_GPIO_Port, LCD_DC_Pin, GPIO_PIN_SET);
     LCD_Select();
-    (void)HAL_SPI_Transmit(&hspi2, (uint8_t *)data, size, LCD_SPI_TIMEOUT);
+    (void)LCD_Transmit(data, size);
     LCD_Unselect();
 }
 
@@ -198,8 +207,7 @@ void LCD_FillRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height,
         chunk = (remaining > LCD_COLOR_CHUNK_PIXELS)
                     ? LCD_COLOR_CHUNK_PIXELS
                     : (uint16_t)remaining;
-        (void)HAL_SPI_Transmit(&hspi2, pixels, (uint16_t)(chunk * 2U),
-                               LCD_SPI_TIMEOUT);
+        (void)LCD_Transmit(pixels, (uint16_t)(chunk * 2U));
         remaining -= chunk;
     }
 

@@ -29,7 +29,7 @@ for start in range(0, len(data), 7):
     frames.extend(p.feed(data[start:start + 7]))
 assert len(frames) == 1 and p.stats['frames_crc_error'] == 0
 f = frames[0]
-assert (f.version, f.type, f.sample_rate, f.count, len(data) - 5) == (2, 2, 500, 50, 78)
-expected = [(((i >> 4) << 4) + 8) for i in range(50)]
+assert (f.version, f.type, f.sample_rate, f.count, len(data) - 5) == (2, 2, 250, 100, 128)
+expected = [(((((i * 2 + 1) >> 4) << 4) + 8)) for i in range(100)]
 assert f.sample0 == 0 and [s.raw for s in f.samples] == expected
-print('PASS: compact C encoder -> fragmented web parser, 78 bytes, CRC valid')
+print('PASS: compact C encoder -> fragmented web parser, 128 bytes, CRC valid')

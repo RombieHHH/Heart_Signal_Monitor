@@ -6,6 +6,28 @@
 #define GREEN 0x07E0U
 #define RED 0xF800U
 #define GRID 0x1082U
+#define SCAN_LINE 0x07FFU
+
+static uint16_t DimColor(uint16_t color, uint8_t shift)
+{
+    if (shift == 0U) return color;
+    uint16_t red = (uint16_t)(((color >> 11) & 0x1FU) >> shift);
+    uint16_t green = (uint16_t)(((color >> 5) & 0x3FU) >> shift);
+    uint16_t blue = (uint16_t)((color & 0x1FU) >> shift);
+    return (uint16_t)((red << 11) | (green << 5) | blue);
+}
+
+static uint8_t TraceDimShift(const ECGPlot *p, uint16_t x)
+{
+    /* p->x is the sweep/detection line. Age zero is immediately behind it;
+       columns approaching the line from ahead are the oldest. */
+    uint16_t age =
+        (uint16_t)((p->x + ECG_PLOT_WIDTH - 1U - x) % ECG_PLOT_WIDTH);
+    if (age >= ECG_PLOT_FADE_DARK_AGE) return 3U;
+    if (age >= ECG_PLOT_FADE_MID_AGE) return 2U;
+    if (age >= ECG_PLOT_FADE_START_AGE) return 1U;
+    return 0U;
+}
 
 void ECGPlot_Init(ECGPlot *p)
 {
@@ -82,9 +104,11 @@ void ECGPlot_RenderColumn(const ECGPlot *p, uint16_t x, uint16_t *pixels)
         {0x01,0x01,0x7F,0x01,0x01}  /* T */
     };
     static const uint16_t colors[6] = {BLACK, RED, 0x07FFU, 0xFD20U, 0xF81FU, 0xFFE0U};
+    uint16_t trace_color = DimColor(GREEN, TraceDimShift(p, x));
     for (unsigned y = 0; y < ECG_PLOT_HEIGHT; ++y) {
         pixels[y] = (x % 20U == 0U || y % 20U == 4U) ? GRID : BLACK;
-        if (p->low[x] != EMPTY && y >= p->low[x] && y <= p->high[x]) pixels[y] = GREEN;
+        if (p->low[x] != EMPTY && y >= p->low[x] && y <= p->high[x])
+            pixels[y] = trace_color;
     }
     /* Draw only this column's intersection with every nearby annotation.
        Incoming waveform columns therefore cannot erase a retained label. */
@@ -107,4 +131,8 @@ void ECGPlot_RenderColumn(const ECGPlot *p, uint16_t x, uint16_t *pixels)
         for (int row = 0; row < 7; ++row)
             if (glyphs[point][col] & (1U << row)) pixels[label_y + row] = color;
     }
+    /* The vertical cyan line marks where the next detected waveform block
+       will be written. The next data column restores the trace underneath. */
+    if (x == p->x)
+        for (unsigned y = 0; y < ECG_PLOT_HEIGHT; ++y) pixels[y] = SCAN_LINE;
 }

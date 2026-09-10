@@ -8,6 +8,7 @@
 #define AD8232_SAMPLE_RATE_HZ 500U
 
 HAL_StatusTypeDef AD8232_Init(void);
+HAL_StatusTypeDef AD8232_Restart(void);
 uint8_t AD8232_ReadSample(uint16_t *sample);
 uint8_t AD8232_ReadIndexedSample(uint16_t *sample, uint32_t *index);
 uint16_t AD8232_GetLatestSample(void);

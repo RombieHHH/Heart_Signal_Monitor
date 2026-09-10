@@ -6,7 +6,7 @@
 
 #include <stddef.h>
 
-#define AD8232_SAMPLE_BUFFER_SIZE 256U
+#define AD8232_SAMPLE_BUFFER_SIZE 512U
 #define AD8232_SAMPLE_BUFFER_MASK (AD8232_SAMPLE_BUFFER_SIZE - 1U)
 #define AD8232_DMA_BUFFER_SIZE    10U
 #define AD8232_DMA_HALF_SIZE      (AD8232_DMA_BUFFER_SIZE / 2U)
@@ -81,6 +81,15 @@ HAL_StatusTypeDef AD8232_Init(void)
     }
 
     return status;
+}
+
+HAL_StatusTypeDef AD8232_Restart(void)
+{
+    /* Recover from a stopped trigger, ADC overrun/error, or DMA channel fault.
+       Stop every producer before resetting the shared queue in AD8232_Init. */
+    (void)HAL_TIM_Base_Stop(&htim3);
+    (void)HAL_ADC_Stop_DMA(&hadc1);
+    return AD8232_Init();
 }
 
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc)

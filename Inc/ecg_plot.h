@@ -6,6 +6,11 @@
 #define ECG_PLOT_WIDTH 240U
 #define ECG_PLOT_HEIGHT 168U
 #define ECG_PLOT_TOP 28U
+/* Old-trace fade originally covered 60 columns. Keep only 30% of that span. */
+#define ECG_PLOT_FADE_WIDTH 18U
+#define ECG_PLOT_FADE_START_AGE (ECG_PLOT_WIDTH - ECG_PLOT_FADE_WIDTH)
+#define ECG_PLOT_FADE_MID_AGE (ECG_PLOT_FADE_START_AGE + ECG_PLOT_FADE_WIDTH / 3U)
+#define ECG_PLOT_FADE_DARK_AGE (ECG_PLOT_FADE_START_AGE + 2U * ECG_PLOT_FADE_WIDTH / 3U)
 typedef struct {
     uint16_t low[ECG_PLOT_WIDTH], high[ECG_PLOT_WIDTH];
     uint16_t marker[ECG_PLOT_WIDTH];

@@ -64,6 +64,15 @@ static void hrv_metrics(void)
 {
     HRVContext h;
     HRV_Init(&h, NULL);
+    HRV_PushRR(&h, 800U);
+    assert(!h.result.metrics_valid && h.result.rr_count == 1U);
+    HRV_PushRR(&h, 1000U);
+    assert(h.result.metrics_valid && h.result.rr_count == 2U);
+    assert(fabsf(h.result.mean_rr_ms - 900.0F) < 0.01F);
+    assert(fabsf(h.result.sdnn_ms - 141.42136F) < 0.01F);
+    assert(fabsf(h.result.rmssd_ms - 200.0F) < 0.01F);
+    assert(!h.result.alarm_active);
+    HRV_Init(&h, NULL);
     for (unsigned int i = 0; i < 32U; ++i) HRV_PushRR(&h, i % 2U ? 1000U : 600U);
     assert(h.result.alarm_active);
     assert(fabsf(h.result.mean_rr_ms - 800.0F) < 0.01F);
@@ -80,7 +89,8 @@ static void invalid_and_recovery(void)
 {
     for (unsigned int i = 0; i < 1600U; ++i) ECGMonitor_Push(&m, 2048U, false);
     assert(!m.heart_rate.result.valid && !m.hrv.result.metrics_valid);
-    ECGMonitor_Push(&m, 2048U, true);
+    for (unsigned int i = 0; i < 125U; ++i)
+        ECGMonitor_Push(&m, 2048U, true);
     assert(!m.result.signal_valid && !m.hrv.result.alarm_active);
     for (unsigned int i = 0; i < 7000U; ++i)
         ECGMonitor_Push(&m, ecg((float)i / 500.0F, 1.0F, 1, 1, false), false);
@@ -90,6 +100,46 @@ static void invalid_and_recovery(void)
     ECGMonitor_Init(&m); /* queue discontinuity */
     assert(!m.heart_rate.result.valid && m.hrv.result.rr_count == 0U);
     puts("Flatline, lead-off, reconnect, clipping, dropped-block reset: PASS");
+}
+
+static void quality_fault_keeps_waveform_running(void)
+{
+    ECGMonitor_Init(&m);
+    const ECGMonitorResult *result = NULL;
+    for (unsigned int i = 0U; i < 1300U; ++i)
+        result = ECGMonitor_Push(&m,
+            ecg((float)i / 500.0F, 1.0F, 1.0F, 1.0F, false), false);
+    assert(result != NULL && result->waveform_valid);
+
+    /* A short LO+/LO- chatter pulse must not erase a valid rhythm. */
+    result = ECGMonitor_Push(&m, 2048U, true);
+    assert(result->signal_valid);
+    for (unsigned int i = 1U; i < 125U; ++i)
+        result = ECGMonitor_Push(&m, 2048U, true);
+    assert(!result->signal_valid);
+    assert(result->waveform_valid);
+    result = ECGMonitor_Push(&m, 2048U, false);
+    assert(result->waveform_valid);
+    puts("Lead/contact quality faults keep the LCD waveform continuous: PASS");
+}
+
+static void isolated_step_preserves_rhythm_alarm(void)
+{
+    ECGMonitor_Init(&m);
+    ECGPreprocess_Reset(&m.preprocess, 2048.0F);
+    m.preprocess.processed_samples = 1001U;
+    m.invalid = false;
+    m.result.signal_valid = true;
+    HRV_SetSignalValid(&m.hrv);
+    for (unsigned int i = 0U; i < 32U; ++i)
+        HRV_PushRR(&m.hrv, (i & 1U) != 0U ? 1000U : 600U);
+    assert(m.hrv.result.alarm_active && m.hrv.result.rr_count == 30U);
+
+    const ECGMonitorResult *result = ECGMonitor_Push(&m, 3000U, false);
+    assert((result->quality_flags & ECG_QUALITY_STEP_ARTIFACT) != 0U);
+    assert(result->signal_valid);
+    assert(m.hrv.result.alarm_active && m.hrv.result.rr_count == 30U);
+    puts("Isolated ADC step preserves accumulated rhythm alarm: PASS");
 }
 
 static void rr_wrap(void)
@@ -102,7 +152,10 @@ static void rr_wrap(void)
     assert(HeartRate_PushRPeak(&h, 260U) == HEART_RATE_EVENT_REJECTED);
     assert(HeartRate_PushRPeak(&h, 750U) == HEART_RATE_EVENT_UPDATED);
     assert(h.result.rr_ms == 1000U);
-    puts("RR sample counter wrap and premature rejection: PASS");
+    assert(HeartRate_PushRPeak(&h, 760U) == HEART_RATE_EVENT_REJECTED);
+    assert(HeartRate_PushRPeak(&h, 2000U) == HEART_RATE_EVENT_GAP);
+    assert(HeartRate_PushRPeak(&h, 2500U) == HEART_RATE_EVENT_UPDATED);
+    puts("RR counter wrap, premature rejection and overlong-gap distinction: PASS");
 }
 
 static float filter_rms(float hz)
@@ -122,10 +175,13 @@ static void filter_response(void)
 {
     float pass = filter_rms(10.0F);
     float baseline = filter_rms(0.1F);
+    float mains = filter_rms(50.0F);
     float high = filter_rms(100.0F);
-    printf("Display filter RMS: 0.1 Hz %.2f, 10 Hz %.2f, 100 Hz %.2f\n", baseline, pass, high);
+    printf("Display filter RMS: 0.1 Hz %.2f, 10 Hz %.2f, 50 Hz %.2f, 100 Hz %.2f\n",
+           baseline, pass, mains, high);
     assert(pass > 130.0F && pass < 150.0F);
     assert(baseline < pass * 0.10F);
+    assert(mains < pass * 0.02F);
     assert(high < pass * 0.20F);
 }
 
@@ -149,7 +205,8 @@ static void irregular_pipeline(void)
     printf("Irregular ECG: %u R peaks, alarm %d\n", detections, alarm_seen);
     assert(detections > 65U && detections < 80U);
     assert(alarm_seen && m.hrv.result.alarm_active);
-    ECGMonitor_Push(&m, 2048U, true);
+    for (unsigned int i = 0U; i < 125U; ++i)
+        ECGMonitor_Push(&m, 2048U, true);
     assert(!m.hrv.result.alarm_active && !m.heart_rate.result.valid);
 }
 
@@ -172,6 +229,20 @@ static void plot_visibility(void)
         for (unsigned y = 0; y < ECG_PLOT_HEIGHT; ++y) red += pixels[y] == 0xF800U;
     }
     assert(red > 35U);
+    /* The sweep head is cyan and increasingly old trace columns are dimmer. */
+    ECGPlot_Init(&p);
+    p.x = 0U;
+    for (unsigned x = 0U; x < ECG_PLOT_WIDTH; ++x)
+        p.low[x] = p.high[x] = 80U;
+    ECGPlot_RenderColumn(&p, 0U, pixels);
+    for (unsigned y = 0U; y < ECG_PLOT_HEIGHT; ++y)
+        assert(pixels[y] == 0x07FFU);
+    ECGPlot_RenderColumn(&p, 239U, pixels);
+    assert(pixels[80] == 0x07E0U);
+    ECGPlot_RenderColumn(&p, 17U, pixels);
+    assert(pixels[80] == 0x03E0U);
+    ECGPlot_RenderColumn(&p, 5U, pixels);
+    assert(pixels[80] == 0x00E0U);
     for (unsigned mode = 1; mode <= 4; ++mode) {
         ECGPlot_NextScale(&p);
         assert(p.scale_mode == mode);
@@ -245,6 +316,8 @@ int main(void)
     regular(60, -1, 1, false);
     regular(75, 1, 0.3F, true);
     invalid_and_recovery();
+    quality_fault_keeps_waveform_running();
+    isolated_step_preserves_rhythm_alarm();
     hrv_metrics();
     rr_wrap();
     filter_response();

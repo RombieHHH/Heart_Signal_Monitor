@@ -16,6 +16,7 @@ import logging
 import re
 import threading
 import time
+from collections import deque
 from typing import Optional
 
 import serial
@@ -27,7 +28,7 @@ from .recorder import CsvRecorder
 
 log = logging.getLogger("ecg.reader")
 
-INACTIVE_TIMEOUT_S = 1.0      # 100 ms 一帧；连续 1 s 无有效帧视为断开
+INACTIVE_TIMEOUT_S = 1.2      # 400 ms 一帧；连续 3 帧无有效数据视为断开
 RECONNECT_DELAY_S = 2.0
 
 # 目标蓝牙模块：主机配对后虚拟为 BTHENUM 串口
@@ -119,6 +120,7 @@ class SerialReader(threading.Thread):
         self.parser = FrameParser()
         self._stop_evt = threading.Event()
         self._port_handle: Optional[serial.Serial] = None
+        self._recent_parser_events = deque()
 
     # ---- 控制 ----
     def stop(self):
@@ -142,7 +144,7 @@ class SerialReader(threading.Thread):
                 self._work_cycle()
             except Exception as exc:  # 捕获未知异常避免线程退出
                 log.exception("reader cycle error: %s", exc)
-            self.store.update_status(connected=False)
+            self.store.mark_disconnected()
             if not self._stop_evt.is_set():
                 self._stop_evt.wait(RECONNECT_DELAY_S)
 
@@ -152,6 +154,7 @@ class SerialReader(threading.Thread):
             return
         self._port_handle = conn
         self.parser = FrameParser()
+        self._recent_parser_events.clear()
         self.store.update_status(
             connected=False,
             serial_open=True,
@@ -171,17 +174,33 @@ class SerialReader(threading.Thread):
                 if not chunk:
                     # 无数据：若连续超时未收到有效帧，标记断连
                     if self._inactive_timed_out():
-                        self.store.update_status(connected=False)
+                        self.store.mark_disconnected(serial_open=True)
                     continue
                 bytes_received += len(chunk)
+                before = dict(self.parser.stats)
                 for frame in self.parser.feed(chunk):
                     recv_ts = time.time()
                     self.store.push_frame(frame)
                     if self.recorder is not None:
                         self.recorder.record(frame, recv_ts)
                 self.store.merge_parser_stats(self.parser.stats)
+                now = time.monotonic()
+                good = self.parser.stats["frames_ok"] - before["frames_ok"]
+                bad = ((self.parser.stats["frames_crc_error"] - before["frames_crc_error"]) +
+                       (self.parser.stats["frames_payload_error"] - before["frames_payload_error"]))
+                if good or bad:
+                    self._recent_parser_events.append((now, good, bad))
+                while self._recent_parser_events and now - self._recent_parser_events[0][0] > 10.0:
+                    self._recent_parser_events.popleft()
+                recent_good = sum(event[1] for event in self._recent_parser_events)
+                recent_bad = sum(event[2] for event in self._recent_parser_events)
+                recent_total = recent_good + recent_bad
                 self.store.update_status(connected=not self._inactive_timed_out(),
-                                         bytes_received=bytes_received)
+                                         bytes_received=bytes_received,
+                                         recent_frame_errors=recent_bad,
+                                         recent_frame_success_percent=round(
+                                             100.0 * recent_good / recent_total, 1)
+                                             if recent_total else 100.0)
         except serial.SerialException as exc:
             log.warning("serial read error: %s", exc)
         finally:
@@ -190,7 +209,7 @@ class SerialReader(threading.Thread):
             except Exception:
                 pass
             self._port_handle = None
-            self.store.update_status(connected=False, serial_open=False)
+            self.store.mark_disconnected(serial_open=False)
 
     # ---- 辅助 ----
     def _open_serial(self):
@@ -213,8 +232,8 @@ class SerialReader(threading.Thread):
             )
         except (serial.SerialException, OSError) as exc:
             log.warning("cannot open %s: %s", target, exc)
-            self.store.update_status(connected=False, serial_open=False,
-                                     port=target, baudrate=self.baudrate)
+            self.store.mark_disconnected(serial_open=False)
+            self.store.update_status(port=target, baudrate=self.baudrate)
             return None
 
     def _inactive_timed_out(self) -> bool:

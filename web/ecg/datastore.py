@@ -19,8 +19,8 @@ from typing import Dict, Optional
 from .protocol import WaveformFrame
 from .processing import HostECGProcessor
 
-# 默认波形可视窗口样本数：4 s * 500 Hz = 2000
-DEFAULT_WINDOW_SAMPLES = 2000
+# 默认波形可视窗口样本数：4 s * 250 Hz = 1000
+DEFAULT_WINDOW_SAMPLES = 1000
 
 
 @dataclass
@@ -37,6 +37,9 @@ class SystemStatus:
     frames_payload_error: int = 0
     frames_unsynced: int = 0
     recovered_bytes: int = 0
+    frame_sequence_gaps: int = 0
+    recent_frame_success_percent: float = 100.0
+    recent_frame_errors: int = 0
     sample_index: int = 0
     frame_seq: int = 0
     sample_rate: int = 500
@@ -52,13 +55,15 @@ class DataStore:
         self._raw = []
         self._r_marks = []       # 与波形等长对齐的 R 事件标记（0/1）
         self._point_marks = []   # 0 none, 1 R, 2 P, 3 Q, 4 S, 5 T
+        self._source_indices = []
         self.latest: Optional[WaveformFrame] = None
-        self.processor = HostECGProcessor(500)
-        self._processor_rate = 500
+        self.processor = HostECGProcessor(250)
+        self._processor_rate = 250
         self._pending_display = deque()
         self._landmarks = {}
         self._previous_frame_seq = None
         self._last_display_index = None
+        self._display_stream_index = -1
         self.status = SystemStatus()
         self.status.sample_rate = 500
 
@@ -78,9 +83,13 @@ class DataStore:
                     self.processor = HostECGProcessor(frame.sample_rate)
                     self._pending_display.clear()
                     self._landmarks.clear()
-                if frame.gap or frame.sent_dropped or (self._previous_frame_seq is not None and
-                        frame.frame_seq != ((self._previous_frame_seq + 1) & 0xFFFFFFFF)):
-                    self.processor.reset()
+                sequence_gap = (self._previous_frame_seq is not None and
+                    frame.frame_seq != ((self._previous_frame_seq + 1) & 0xFFFFFFFF))
+                if frame.gap or frame.sent_dropped or sequence_gap:
+                    if sequence_gap:
+                        missing = ((frame.frame_seq - self._previous_frame_seq - 1) & 0xFFFFFFFF)
+                        st.frame_sequence_gaps += missing if missing < 10000 else 1
+                    self.processor.handle_gap()
                     self._pending_display.clear()
                     self._landmarks.clear()
                 for offset, rec in enumerate(frame.samples):
@@ -104,14 +113,18 @@ class DataStore:
                     self._raw.append(raw)
                     self._point_marks.append(point)
                     self._r_marks.append(1 if point == 1 else 0)
+                    self._source_indices.append(sequence)
                     self._last_display_index = sequence
+                    self._display_stream_index += 1
             else:
-                for rec in frame.samples:
+                for offset, rec in enumerate(frame.samples):
                     self._filtered.append(rec.filtered)
                     self._raw.append(rec.raw)
                     point = 1 if rec.r_seq is not None else 0
                     self._point_marks.append(point)
                     self._r_marks.append(1 if point == 1 else 0)
+                    self._source_indices.append(frame.sample0 + offset)
+                    self._display_stream_index += 1
                 self._last_display_index = frame.sample0 + frame.count - 1
             if self._last_display_index is not None:
                 st.sample_index = self._last_display_index
@@ -122,11 +135,34 @@ class DataStore:
                 del self._raw[:excess]
                 del self._r_marks[:excess]
                 del self._point_marks[:excess]
+                del self._source_indices[:excess]
 
     def update_status(self, **kwargs) -> None:
         with self._lock:
             for k, v in kwargs.items():
                 setattr(self.status, k, v)
+
+    def mark_disconnected(self, serial_open: Optional[bool] = None) -> None:
+        """标记实时传输中断，并清除所有不再属于实时数据的显示状态。"""
+        with self._lock:
+            self.status.connected = False
+            self.status.recent_frame_success_percent = 0.0
+            self.status.recent_frame_errors = 0
+            if serial_open is not None:
+                self.status.serial_open = serial_open
+            self.status.sample_index = 0
+            self.latest = None
+            self._filtered.clear()
+            self._raw.clear()
+            self._r_marks.clear()
+            self._point_marks.clear()
+            self._source_indices.clear()
+            self._pending_display.clear()
+            self._landmarks.clear()
+            self._previous_frame_seq = None
+            self._last_display_index = None
+            self._display_stream_index = -1
+            self.processor = HostECGProcessor(self._processor_rate)
 
     def merge_parser_stats(self, parser_stats: Dict[str, int]) -> None:
         with self._lock:
@@ -173,10 +209,16 @@ class DataStore:
                     "frames_payload_error": st.frames_payload_error,
                     "frames_unsynced": st.frames_unsynced,
                     "recovered_bytes": st.recovered_bytes,
+                    "frame_sequence_gaps": st.frame_sequence_gaps,
+                    "recent_frame_success_percent": st.recent_frame_success_percent,
+                    "recent_frame_errors": st.recent_frame_errors,
                 },
                 "metrics": self._latest_metrics_locked(st),
                 "samples": {
-                    "start_index": start + (st.sample_index - (n - 1)) if self.latest else None,
+                    "start_index": self._source_indices[start] if n else None,
+                    "end_index": self._source_indices[-1] if n else None,
+                    "stream_start_index": self._display_stream_index - n + 1 + start if n else None,
+                    "stream_end_index": self._display_stream_index if n else None,
                     "filtered": self._filtered[start:],
                     "raw": self._raw[start:],
                     "r_marks": self._r_marks[start:],

@@ -5,3 +5,5 @@ openocd.cfg
 *.pyc
 *csv
 /tests
+/report
+/output

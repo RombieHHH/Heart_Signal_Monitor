@@ -85,6 +85,7 @@ class HostECGProcessor:
         self.pending_index = 0
         self.last_r = None
         self.rr = deque(maxlen=30)
+        self.missed_peak_intervals = 0
         self.raw_window = deque(maxlen=2 * self.sample_rate)
         self.clip_window = deque(maxlen=2 * self.sample_rate)
         self.signal_level = 0.0
@@ -260,8 +261,20 @@ class HostECGProcessor:
         if self.last_r is not None:
             interval = peak - self.last_r
             bpm = 60.0 * self.sample_rate / interval if interval else 0.0
-            if 30.0 <= bpm <= 220.0:
-                self.rr.append(1000.0 * interval / self.sample_rate)
+            rr_ms = 1000.0 * interval / self.sample_rate
+            # A single lost R peak produces an interval close to two (or
+            # occasionally three) normal RR periods. Re-anchor on the
+            # current real peak, but keep that transport/detection gap out
+            # of BPM and HRV so it cannot halve the displayed heart rate.
+            recent_median = statistics.median(list(self.rr)[-5:]) if len(self.rr) >= 3 else None
+            missed = recent_median is not None and any(
+                abs(rr_ms / multiple - recent_median) <= 0.20 * recent_median
+                for multiple in (2, 3)
+            )
+            if missed:
+                self.missed_peak_intervals += 1
+            elif 30.0 <= bpm <= 220.0:
+                self.rr.append(rr_ms)
             else:
                 self.rr.clear()
         self.last_r = peak

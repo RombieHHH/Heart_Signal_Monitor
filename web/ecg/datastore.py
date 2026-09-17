@@ -212,6 +212,7 @@ class DataStore:
                     "frame_sequence_gaps": st.frame_sequence_gaps,
                     "recent_frame_success_percent": st.recent_frame_success_percent,
                     "recent_frame_errors": st.recent_frame_errors,
+                    "rr_outliers_ignored": self.processor.missed_peak_intervals,
                 },
                 "metrics": self._latest_metrics_locked(st),
                 "samples": {

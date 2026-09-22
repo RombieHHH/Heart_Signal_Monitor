@@ -1,5 +1,9 @@
-\.pio
-STM32F103xx_FLASH.ld
-platformio.ini
-\cmake
-\build
+build
+mx.scratch
+!.settings
+openocd.cfg
+*.pyc
+*csv
+/tests
+/report
+/output

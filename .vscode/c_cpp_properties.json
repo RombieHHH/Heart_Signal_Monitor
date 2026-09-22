@@ -1,50 +1,11 @@
 {
     "configurations": [
         {
-            "name": "PlatformIO",
-            "includePath": [
-                "D:/Code/Heart_Signal_Monitor",
-                "D:/Code/Heart_Signal_Monitor/Inc",
-                "D:/Code/Heart_Signal_Monitor/Drivers/STM32F1xx_HAL_Driver/Inc",
-                "D:/Code/Heart_Signal_Monitor/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy",
-                "D:/Code/Heart_Signal_Monitor/Drivers/CMSIS/Device/ST/STM32F1xx/Include",
-                "D:/Code/Heart_Signal_Monitor/Drivers/CMSIS/Include",
-                "D:/Code/Heart_Signal_Monitor/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2",
-                "D:/Code/Heart_Signal_Monitor/Middlewares/Third_Party/FreeRTOS/Source/include",
-                "D:/Code/Heart_Signal_Monitor/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3",
-                "D:/Code/Heart_Signal_Monitor/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang",
-                ""
-            ],
-            "browse": {
-                "limitSymbolsToIncludedHeaders": true,
-                "path": [
-                    "D:/Code/Heart_Signal_Monitor",
-                    "D:/Code/Heart_Signal_Monitor/Inc",
-                    "D:/Code/Heart_Signal_Monitor/Drivers/STM32F1xx_HAL_Driver/Inc",
-                    "D:/Code/Heart_Signal_Monitor/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy",
-                    "D:/Code/Heart_Signal_Monitor/Drivers/CMSIS/Device/ST/STM32F1xx/Include",
-                    "D:/Code/Heart_Signal_Monitor/Drivers/CMSIS/Include",
-                    "D:/Code/Heart_Signal_Monitor/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2",
-                    "D:/Code/Heart_Signal_Monitor/Middlewares/Third_Party/FreeRTOS/Source/include",
-                    "D:/Code/Heart_Signal_Monitor/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3",
-                    "D:/Code/Heart_Signal_Monitor/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang",
-                    ""
-                ]
-            },
-            "defines": [
-                "F_CPU=72000000L",
-                "PLATFORMIO=60200",
-                "STM32F103xB",
-                "STM32F1",
-                ""
-            ],
-            "compilerPath": "C:/Users/MagmaDimsum/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-gcc.exe",
-            "compilerArgs": [
-                "-mthumb",
-                "-mcpu=cortex-m3",
-                ""
-            ],
-            "compileCommands": "${workspaceFolder}/build/Debug/compile_commands.json"
+            "name": "STM32",
+            "compileCommands": "${workspaceFolder}/build/Release/compile_commands.json",
+            "intelliSenseMode": "windows-msvc-x64",
+            "cStandard": "c17",
+            "cppStandard": "c++17"
         }
     ],
     "version": 4
